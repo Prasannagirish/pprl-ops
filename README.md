@@ -32,6 +32,8 @@ Run in order:
 2. `supabase/migrations/002_org_teams_and_admin.sql`
 3. `supabase/migrations/003_auto_role_from_team.sql`
 4. `supabase/migrations/004_team_access_codes.sql`
+5. `supabase/migrations/005_event_config.sql`
+6. `supabase/migrations/006_perf_indexes.sql`
 
 ## Provisioning a shared team user (one-time per team)
 
@@ -51,3 +53,58 @@ Run in order:
    (Role is set automatically to `team` by the trigger.)
 3. In the admin dashboard → Team Access Codes panel, select `TC`, enter the shared email and a PIN → Save.
 4. Done — all TC POCs can now log in from the Team Access tab.
+
+## Google Sheets setup (one-time)
+
+The sync writes to a real Google Sheet using a service account, not a user's personal OAuth login, so it keeps working unattended.
+
+1. In [Google Cloud Console](https://console.cloud.google.com), create (or reuse) a project, then enable the **Google Sheets API** for it.
+2. Create a **Service Account** (IAM & Admin → Service Accounts), then create a **JSON key** for it and download it.
+3. From that JSON, you need two values for env vars:
+   - `GOOGLE_SERVICE_ACCOUNT_EMAIL` → the `client_email` field
+   - `GOOGLE_PRIVATE_KEY` → the `private_key` field (keep the `\n` escapes as-is; the app un-escapes them at runtime)
+4. Create the destination Google Sheet, then **share it** with the service account's email (the `client_email` above) as an **Editor** — this step is easy to miss and is the #1 cause of "permission denied" sync failures.
+5. Copy the spreadsheet ID from its URL (`https://docs.google.com/spreadsheets/d/<this-part>/edit`) into `GOOGLE_SHEETS_SPREADSHEET_ID`.
+
+The app creates one tab per event day ("Day 0", "Day 1", ...) automatically the first time it syncs, based on the Day 0 date set in the admin dashboard — you don't need to pre-create tabs.
+
+## Deploying
+
+This is a standard Next.js app, so it deploys cleanly to Vercel (or any Node host).
+
+1. **Supabase**: create a project, run the migrations above in order via the SQL editor.
+2. **Google Sheets**: follow the section above to get a service account + spreadsheet.
+3. **Push the repo to GitHub** (needed either way — Vercel deploys from git, and the auto-sync GitHub Action below also needs the repo there).
+4. **Vercel**: import the repo as a new project. Set these environment variables in Project Settings → Environment Variables:
+   - `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`
+   - `GOOGLE_SHEETS_SPREADSHEET_ID`, `GOOGLE_SERVICE_ACCOUNT_EMAIL`, `GOOGLE_PRIVATE_KEY`
+   - `APP_TIMEZONE` (e.g. `Asia/Kolkata`)
+   - `TEAM_SHARED_PASSWORD`
+   - `CRON_SECRET` — any random 16+ char string; this guards the auto-sync endpoint (see below)
+   - Deploy.
+5. **Provision teams and a shared user per team** as described above.
+6. **Set up auto-sync** (see below) so trips land in the sheet without anyone clicking "Force Sync".
+
+## Auto-sync
+
+Trips are written to a `sync_queue` table as soon as they're created/edited, but something still has to drain that queue. There are two ways to do that automatically instead of an admin clicking "Force Sync" in the dashboard:
+
+**`GET /api/cron/sync`** is a dedicated, unauthenticated-by-session endpoint built for this. It checks a shared secret instead of a login, so a scheduler can hit it directly:
+```
+Authorization: Bearer <CRON_SECRET>
+```
+
+Pick one of these to actually call it on a schedule:
+
+- **GitHub Actions (recommended, free, works on any plan)** — `.github/workflows/auto-sync.yml` is already set up to hit the endpoint every 5 minutes. Just add two repo secrets under Settings → Secrets and variables → Actions:
+  - `APP_URL` — your deployed URL, e.g. `https://pprl-ops.vercel.app`
+  - `CRON_SECRET` — same value you set on Vercel
+  
+  That's it — once the secrets are set and the workflow file is on the default branch, it runs on its own.
+
+- **Vercel Cron** — `vercel.json` is already configured to hit `/api/cron/sync` every 5 minutes. **This requires Vercel Pro** — Hobby plan caps cron jobs at once per day, which is too infrequent for trip updates to show up promptly. If you're on Hobby, either delete the `crons` block from `vercel.json` (so it doesn't fail deployment) and rely on the GitHub Action instead, or upgrade to Pro.
+
+You can adjust the schedule in either file — `*/5 * * * *` means every 5 minutes; e.g. `*/2 * * * *` for every 2 minutes.
+
+You can still trigger a manual sync any time from the admin dashboard's "Force Sync" button (`POST /api/sync`) — that path is unchanged and is independent of the scheduler.
+
