@@ -94,17 +94,15 @@ Trips are written to a `sync_queue` table as soon as they're created/edited, but
 Authorization: Bearer <CRON_SECRET>
 ```
 
-Pick one of these to actually call it on a schedule:
+Use **GitHub Actions** to call it on a schedule — `.github/workflows/auto-sync.yml` is already set up to hit the endpoint every 5 minutes, and it's free on any Vercel plan (Vercel's own built-in Cron Jobs require Pro for anything more frequent than once a day, which is too infrequent here, so this repo doesn't use `vercel.json` crons at all).
 
-- **GitHub Actions (recommended, free, works on any plan)** — `.github/workflows/auto-sync.yml` is already set up to hit the endpoint every 5 minutes. Just add two repo secrets under Settings → Secrets and variables → Actions:
-  - `APP_URL` — your deployed URL, e.g. `https://pprl-ops.vercel.app`
-  - `CRON_SECRET` — same value you set on Vercel
-  
-  That's it — once the secrets are set and the workflow file is on the default branch, it runs on its own.
+Set up:
+1. Add two repo secrets under Settings → Secrets and variables → Actions:
+   - `APP_URL` — your deployed URL, e.g. `https://pprl-ops.vercel.app`
+   - `CRON_SECRET` — same value you set on Vercel
+2. Push the workflow file to your default branch — it starts running on its own from then on.
 
-- **Vercel Cron** — `vercel.json` is already configured to hit `/api/cron/sync` every 5 minutes. **This requires Vercel Pro** — Hobby plan caps cron jobs at once per day, which is too infrequent for trip updates to show up promptly. If you're on Hobby, either delete the `crons` block from `vercel.json` (so it doesn't fail deployment) and rely on the GitHub Action instead, or upgrade to Pro.
-
-You can adjust the schedule in either file — `*/5 * * * *` means every 5 minutes; e.g. `*/2 * * * *` for every 2 minutes.
+You can change the cadence by editing the `cron:` line in that file — e.g. `*/2 * * * *` for every 2 minutes.
 
 You can still trigger a manual sync any time from the admin dashboard's "Force Sync" button (`POST /api/sync`) — that path is unchanged and is independent of the scheduler.
 
