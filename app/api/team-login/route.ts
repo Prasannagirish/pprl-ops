@@ -49,10 +49,12 @@ export async function POST(request: Request) {
 
   const supabase = createAdminClient();
 
-  // 1. Resolve the team.
+  // 1 & 2. Resolve the team and its access code in a single round trip
+  //    (was two sequential queries -- each one is a full network hop to
+  //    Supabase, which is where most of the login latency comes from).
   const { data: team, error: teamErr } = await supabase
     .from("teams")
-    .select("id, name, disabled, is_admin_team")
+    .select("id, name, disabled, is_admin_team, team_access_codes(code_hash, enabled, shared_email)")
     .eq("name", teamCode.toUpperCase())
     .single();
 
@@ -68,14 +70,9 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Admin team must use personal login." }, { status: 403 });
   }
 
-  // 2. Get the access code record.
-  const { data: codeRow, error: codeErr } = await supabase
-    .from("team_access_codes")
-    .select("code_hash, enabled, shared_email")
-    .eq("team_id", team.id)
-    .single();
+  const codeRow = Array.isArray(team.team_access_codes) ? team.team_access_codes[0] : team.team_access_codes;
 
-  if (codeErr || !codeRow || !codeRow.enabled) {
+  if (!codeRow || !codeRow.enabled) {
     return NextResponse.json({ error: "No active access code for this team. Ask your PPRL admin to set one." }, { status: 401 });
   }
 

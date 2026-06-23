@@ -21,19 +21,22 @@ export async function requireSession() {
 
   const supabase = createClient();
 
-  // Fire getUser and we'll get the userId, then fetch profile in parallel
-  // with any other data the caller needs. Previously these were serial:
-  // getUser() → getProfile() = 2 round trips before the page could render.
+  // middleware.ts already called getUser() for this request, which hits
+  // Supabase's Auth server to validate the JWT and refreshes the cookie if
+  // needed. That's the expensive, network round-trip call. By the time we
+  // get here the cookie is already verified, so getSession() (a local JWT
+  // decode, no network call) is enough -- calling getUser() again here was
+  // paying for the same verification twice on every single page load.
   const {
-    data: { user }
-  } = await supabase.auth.getUser();
+    data: { session }
+  } = await supabase.auth.getSession();
 
-  if (!user) redirect("/login");
+  if (!session?.user) redirect("/login");
 
-  const profile = await getProfile(supabase, user.id);
+  const profile = await getProfile(supabase, session.user.id);
   if (!profile) redirect("/login?error=missing-profile");
 
-  return { supabase, user, profile };
+  return { supabase, user: session.user, profile };
 }
 
 export async function requireAdmin() {
