@@ -6,6 +6,10 @@ import { redirect } from "next/navigation";
 export default async function DashboardPage() {
   const { supabase, profile } = await requireSession();
 
+  // Defensive fallback only -- normal logins now route admins straight to
+  // /admin from login/page.tsx before ever navigating here. This still
+  // catches an admin landing on /dashboard directly (bookmark, typed URL,
+  // back button) without bouncing through a half-rendered loading state.
   if (profile.role === "admin") redirect("/admin");
 
   // Fetch trips and teams in parallel

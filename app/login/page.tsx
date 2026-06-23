@@ -29,6 +29,35 @@ export default function LoginPage() {
       setError("Add Supabase values to .env.local, then restart the dev server.");
   }, []);
 
+  // ── Route straight to the right destination ─────────────────────
+  // Previously both login paths always sent the user to /dashboard, and
+  // admins only got redirected to /admin from *inside* that page's render
+  // (see app/dashboard/page.tsx). That mid-render redirect was breaking
+  // the /admin loading skeleton -- the browser would start showing
+  // /dashboard's loading state, then get yanked to /admin partway
+  // through, so /admin's own loading.tsx never got a clean mount.
+  // Checking the role here, before navigating at all, means we go
+  // straight to the right route the first time.
+  async function redirectByRole() {
+    const supabase = createClient();
+    const {
+      data: { user }
+    } = await supabase.auth.getUser();
+
+    let isAdmin = false;
+    if (user) {
+      const { data: profile } = await supabase.from("profiles").select("role").eq("id", user.id).single();
+      isAdmin = profile?.role === "admin";
+    }
+
+    if (isAdmin) {
+      router.replace("/admin");
+    } else {
+      router.replace("/dashboard");
+    }
+    router.refresh();
+  }
+
   // ── Personal login ────────────────────────────────────────────
   async function onPersonalSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -36,10 +65,8 @@ export default function LoginPage() {
     setError("");
     const supabase = createClient();
     const { error: authError } = await supabase.auth.signInWithPassword({ email, password });
-    setLoading(false);
-    if (authError) { setError(authError.message); return; }
-    router.replace("/dashboard");
-    router.refresh();
+    if (authError) { setLoading(false); setError(authError.message); return; }
+    await redirectByRole();
   }
 
   // ── Team access login ─────────────────────────────────────────
@@ -70,8 +97,7 @@ export default function LoginPage() {
       if (sessionError) { setError(sessionError.message); setLoading(false); return; }
       // Store the POC label in sessionStorage so the header can show it.
       sessionStorage.setItem("poc_label", pocName.trim());
-      router.replace("/dashboard");
-      router.refresh();
+      await redirectByRole();
     } catch {
       setError("Network error. Please try again.");
       setLoading(false);
