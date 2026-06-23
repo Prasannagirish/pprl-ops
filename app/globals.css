@@ -540,3 +540,42 @@ tr:hover td { background: rgba(28, 36, 48, 0.6); }
 
   .form-grid { grid-template-columns: 1fr; }
 }
+
+/* ── Loading skeleton ─────────────────────────────────────────────────
+   Shown instantly (via loading.tsx) while the dashboard/admin Server
+   Component is still doing its auth + data round trips, so the user
+   sees the app shell right away instead of a blank screen for several
+   seconds. Purely a perceived-speed aid -- it doesn't change how long
+   the backend work actually takes. */
+.skeleton-block {
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0.04) 25%,
+    rgba(255, 255, 255, 0.09) 37%,
+    rgba(255, 255, 255, 0.04) 63%
+  );
+  background-size: 400% 100%;
+  animation: skeleton-shimmer 1.4s ease infinite;
+  border-radius: var(--radius-sm);
+}
+
+@keyframes skeleton-shimmer {
+  0% { background-position: 100% 50%; }
+  100% { background-position: 0 50%; }
+}
+
+.skeleton-topbar {
+  height: 56px;
+  border-bottom: 1px solid var(--edge);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 0 clamp(18px, 4vw, 56px);
+}
+
+.skeleton-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 14px;
+  margin-bottom: 20px;
+}
