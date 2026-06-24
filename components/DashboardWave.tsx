@@ -49,6 +49,7 @@ export default function DashboardWave() {
     }
 
     function init() {
+      if (!canvas) return;
       W = canvas.width = canvas.offsetWidth;
       H = canvas.height = canvas.offsetHeight;
       cols = Math.ceil(W / GAP) + 1;
