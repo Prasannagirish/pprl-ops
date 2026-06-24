@@ -80,6 +80,7 @@ export default function DashboardWave() {
     }
 
     function frame() {
+      if (!ctx) return;
       ctx.clearRect(0, 0, W, H);
 
       for (const w of waves) {
