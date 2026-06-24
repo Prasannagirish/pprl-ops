@@ -293,11 +293,14 @@ export async function processPendingSyncs(limit = 50) {
 
     await ensureTabsExist(sheets, spreadsheetId, labels, existingSheets);
 
-    // Write all day tabs in parallel
+    // Write all day tabs in parallel.
+    // Rows are written with status "SYNCED" so the sheet immediately
+    // reflects the final state — the Supabase update below happens in the
+    // same Promise.all, so both are consistent after this point.
     await Promise.all(
       labels.map((label) => {
         const tripsForDay = sortTripsByTime(groups.get(label) || []);
-        const rows = tripsForDay.map(tripToSheetRow);
+        const rows = tripsForDay.map((trip) => tripToSheetRow(trip, "SYNCED"));
         return writeDayTab(sheets, spreadsheetId, label, rows);
       })
     );

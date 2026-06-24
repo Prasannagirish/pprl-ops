@@ -37,6 +37,7 @@ export default async function AdminPage() {
       <AppHeaderClientWrapper profile={profile} />
       <div className="page">
         <AdminDashboard
+          profile={profile}
           initialTrips={trips}
           initialTeams={teams}
           auditLogs={auditLogs}

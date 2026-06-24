@@ -50,7 +50,7 @@ function getDisplayPickupTime(trip: Trip): string | null {
   return trip.direction === "TO_CAMPUS" ? getGuestTravelTime(trip) : trip.guest_buffer_time;
 }
 
-export function tripToSheetRow(trip: Trip): string[] {
+export function tripToSheetRow(trip: Trip, statusOverride?: string): string[] {
   return [
     trip.teams?.name || trip.team_id,
     trip.guest_name,
@@ -66,7 +66,7 @@ export function tripToSheetRow(trip: Trip): string[] {
     formatTime(trip.poc_buffer_time),
     trip.poc_name,
     trip.poc_contact,
-    trip.sync_status
+    statusOverride ?? trip.sync_status
   ];
 }
 

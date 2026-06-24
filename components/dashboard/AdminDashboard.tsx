@@ -7,9 +7,12 @@ import { TeamAccessPanel } from "@/components/dashboard/TeamAccessPanel";
 import { TripForm } from "@/components/forms/TripForm";
 import { TripTable } from "@/components/tables/TripTable";
 import { useTripsRealtime } from "@/lib/supabase/useTripsRealtime";
-import type { AuditLog, Direction, LocationType, SyncStatus, Team, Trip } from "@/types/trip";
+import { usePresence } from "@/lib/supabase/usePresence";
+import { ActiveUsersPanel } from "@/components/dashboard/ActiveUsersPanel";
+import type { AuditLog, Direction, LocationType, Profile, SyncStatus, Team, Trip } from "@/types/trip";
 
 type AdminDashboardProps = {
+  profile: Profile;
   initialTrips: Trip[];
   initialTeams: Team[];
   auditLogs: AuditLog[];
@@ -34,7 +37,7 @@ const emptyFilters: Filters = {
   to: ""
 };
 
-export function AdminDashboard({ initialTrips, initialTeams, auditLogs, initialDayZeroDate }: AdminDashboardProps) {
+export function AdminDashboard({ profile, initialTrips, initialTeams, auditLogs, initialDayZeroDate }: AdminDashboardProps) {
   const [trips, setTrips] = useState(initialTrips);
   const [teams, setTeams] = useState(initialTeams);
   const [filters, setFilters] = useState<Filters>(emptyFilters);
@@ -77,6 +80,13 @@ export function AdminDashboard({ initialTrips, initialTeams, auditLogs, initialD
 
   const operationalTeams = useMemo(() => teams.filter((team) => !team.is_admin_team), [teams]);
   const adminTeams = useMemo(() => teams.filter((team) => team.is_admin_team), [teams]);
+
+  // Derive the admin's own team name for the presence broadcast.
+  const adminTeamName = useMemo(
+    () => teams.find((t) => t.id === profile.team_id)?.name ?? "PPRL",
+    [teams, profile.team_id]
+  );
+  const activeUsers = usePresence(profile, adminTeamName);
 
   useTripsRealtime(teams, {
     onInsert: (trip) => setTrips((current) => (current.some((item) => item.id === trip.id) ? current : [...current, trip])),
@@ -214,7 +224,8 @@ export function AdminDashboard({ initialTrips, initialTeams, auditLogs, initialD
       <AnalyticsCards trips={trips} />
 
       <section className="grid" style={{ gridTemplateColumns: "minmax(260px, 360px) 1fr", alignItems: "start" }}>
-        <aside className="panel">
+        <aside className="panel" style={{ display: "flex", flexDirection: "column", gap: 0 }}>
+          <ActiveUsersPanel users={activeUsers.filter((u) => u.role !== "admin")} />
           <div className="panel-header">
             <strong>Admin Actions</strong>
           </div>

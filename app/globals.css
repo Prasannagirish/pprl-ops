@@ -37,8 +37,8 @@
   --stop-line: rgba(226, 91, 84, 0.3);
 
   --display: var(--font-space-grotesk), ui-sans-serif, system-ui, sans-serif;
-  --sans:    var(--font-inter), ui-sans-serif, system-ui, -apple-system, sans-serif;
-  --mono:    var(--font-jetbrains-mono), ui-monospace, monospace;
+  --sans: var(--font-inter), ui-sans-serif, system-ui, -apple-system, sans-serif;
+  --mono: var(--font-jetbrains-mono), ui-monospace, monospace;
 
   --radius: 10px;
   --radius-sm: 7px;

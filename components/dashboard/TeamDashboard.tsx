@@ -6,6 +6,7 @@ import { AnalyticsCards } from "@/components/dashboard/AnalyticsCards";
 import { TripForm } from "@/components/forms/TripForm";
 import { TripTable } from "@/components/tables/TripTable";
 import { useTripsRealtime } from "@/lib/supabase/useTripsRealtime";
+import { usePresence } from "@/lib/supabase/usePresence";
 import type { Profile, Team, Trip } from "@/types/trip";
 
 type TeamDashboardProps = {
@@ -25,6 +26,12 @@ export function TeamDashboard({ profile, initialTrips, teams }: TeamDashboardPro
     onUpdate: (trip) => setTrips((current) => current.map((item) => (item.id === trip.id ? trip : item))),
     onDelete: (id) => setTrips((current) => current.filter((item) => item.id !== id))
   });
+
+  // Broadcast this user's presence so the admin can see who is currently
+  // active on the dashboard. Return value is intentionally unused here —
+  // team users don't need to see the full active-user list.
+  const teamName = teams.find((t) => t.id === profile.team_id)?.name ?? "Unknown";
+  usePresence(profile, teamName);
 
   const filteredTrips = useMemo(() => {
     const normalized = query.trim().toLowerCase();
