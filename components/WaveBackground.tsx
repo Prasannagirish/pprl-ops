@@ -50,6 +50,7 @@ export default function WaveBackground() {
     }
 
     function init() {
+      if (!canvas) return;
       W = canvas.width = canvas.offsetWidth;
       H = canvas.height = canvas.offsetHeight;
       cols = Math.ceil(W / GAP) + 1;
@@ -82,6 +83,7 @@ export default function WaveBackground() {
     let t = 0;
 
     function frame() {
+      if (!ctx) return;
       ctx.clearRect(0, 0, W, H);
       t++;
 
