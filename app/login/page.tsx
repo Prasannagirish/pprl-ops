@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/browser";
+import WaveBackground from "@/components/WaveBackground";
 
 type Tab = "personal" | "team";
 
@@ -29,15 +30,6 @@ export default function LoginPage() {
       setError("Add Supabase values to .env.local, then restart the dev server.");
   }, []);
 
-  // ── Route straight to the right destination ─────────────────────
-  // Previously both login paths always sent the user to /dashboard, and
-  // admins only got redirected to /admin from *inside* that page's render
-  // (see app/dashboard/page.tsx). That mid-render redirect was breaking
-  // the /admin loading skeleton -- the browser would start showing
-  // /dashboard's loading state, then get yanked to /admin partway
-  // through, so /admin's own loading.tsx never got a clean mount.
-  // Checking the role here, before navigating at all, means we go
-  // straight to the right route the first time.
   async function redirectByRole() {
     const supabase = createClient();
     const {
@@ -87,15 +79,12 @@ export default function LoginPage() {
         setLoading(false);
         return;
       }
-      // Team login returns a Supabase session via signInWithPassword on the
-      // shared team auth user — set it in the browser client.
       const supabase = createClient();
       const { error: sessionError } = await supabase.auth.setSession({
         access_token: body.access_token,
         refresh_token: body.refresh_token
       });
       if (sessionError) { setError(sessionError.message); setLoading(false); return; }
-      // Store the POC label in sessionStorage so the header can show it.
       sessionStorage.setItem("poc_label", pocName.trim());
       await redirectByRole();
     } catch {
@@ -106,6 +95,9 @@ export default function LoginPage() {
 
   return (
     <main className="login-page">
+      {/* ── Mexican-wave particle background ── */}
+      <WaveBackground />
+
       <section className="panel login-panel">
         <div className="panel-body">
           <div className="brand" style={{ marginBottom: 28 }}>

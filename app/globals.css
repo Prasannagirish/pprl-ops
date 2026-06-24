@@ -71,7 +71,12 @@ a { color: inherit; text-decoration: none; }
 }
 
 /* ── Shell ────────────────────────────────────────────────────────── */
-.shell { min-height: 100vh; display: flex; flex-direction: column; }
+.shell {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+}
 
 /* ── Topbar ───────────────────────────────────────────────────────── */
 .topbar {
@@ -448,19 +453,33 @@ tr:hover td { background: var(--line-soft); }
 /* ── Login page ───────────────────────────────────────────────────── */
 .login-page {
   align-items: center;
-  background:
-    radial-gradient(620px circle at 18% 8%, rgba(91, 141, 239, 0.07), transparent 60%),
-    var(--ink);
+  background: var(--ink);
   display: grid;
   min-height: 100vh;
   padding: 24px;
+  position: relative;   /* canvas anchors to this */
+  overflow: hidden;
 }
 
+/* Wave canvas sits behind everything */
+.login-page canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* Panel floats above the canvas */
 .login-panel {
   margin: 0 auto;
   max-width: 408px;
   width: 100%;
+  position: relative;
+  z-index: 1;
 }
+
 
 .login-panel h1 {
   font-family: var(--display);

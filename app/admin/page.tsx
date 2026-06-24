@@ -1,4 +1,5 @@
 import { AdminDashboard } from "@/components/dashboard/AdminDashboard";
+import DashboardWave from "@/components/DashboardWave";
 import { AppHeaderClientWrapper } from "@/components/dashboard/AppHeaderClientWrapper";
 import { listAuditLogs, listTeams, listTrips, requireAdmin } from "@/lib/supabase/queries";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -32,6 +33,7 @@ export default async function AdminPage() {
 
   return (
     <main className="shell">
+      <DashboardWave />
       <AppHeaderClientWrapper profile={profile} />
       <div className="page">
         <AdminDashboard

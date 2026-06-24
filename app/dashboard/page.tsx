@@ -1,4 +1,5 @@
 import { AppHeaderClientWrapper } from "@/components/dashboard/AppHeaderClientWrapper";
+import DashboardWave from "@/components/DashboardWave";
 import { TeamDashboard } from "@/components/dashboard/TeamDashboard";
 import { listTeams, listTrips, requireSession } from "@/lib/supabase/queries";
 import { redirect } from "next/navigation";
@@ -17,6 +18,7 @@ export default async function DashboardPage() {
 
   return (
     <main className="shell">
+      <DashboardWave />
       <AppHeaderClientWrapper profile={profile} />
       <div className="page">
         <TeamDashboard profile={profile} initialTrips={trips} teams={teams} />
