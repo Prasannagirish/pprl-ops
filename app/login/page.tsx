@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/browser";
 import WaveBackground from "@/components/WaveBackground";
+import { ThemeToggle } from "@/components/ThemeToggle";
 
 type Tab = "personal" | "team";
 
@@ -98,9 +99,13 @@ export default function LoginPage() {
       {/* ── Mexican-wave particle background ── */}
       <WaveBackground />
 
+      <div className="login-page-toggle">
+        <ThemeToggle />
+      </div>
+
       <section className="panel login-panel">
         <div className="panel-body">
-          <div className="brand" style={{ marginBottom: 28 }}>
+          <div className="brand">
             <span className="brand-mark">PPRL</span>
             <div>
               <h1>PPRL Ops</h1>
@@ -109,13 +114,14 @@ export default function LoginPage() {
           </div>
 
           {/* ── Tabs ── */}
-          <div className="login-tabs">
+          <div className="login-tabs" data-active={tab}>
+            <span className="login-tabs-pill" aria-hidden="true" />
             <button
               className={`login-tab${tab === "personal" ? " active" : ""}`}
               type="button"
               onClick={() => { setTab("personal"); setError(""); }}
             >
-              Personal login
+              Admin login
             </button>
             <button
               className={`login-tab${tab === "team" ? " active" : ""}`}
@@ -161,7 +167,7 @@ export default function LoginPage() {
           {/* ── Team access ── */}
           {tab === "team" && (
             <form className="grid" onSubmit={onTeamSubmit}>
-              <p style={{ margin: 0, fontSize: 13, color: "#5f6d64" }}>
+              <p className="hint">
                 All POCs of a team share one access code + PIN. No personal account needed.
               </p>
               <div className="field">

@@ -222,7 +222,7 @@ export function TripForm({ teams, role, initialTrip, onSaved, onCancel }: TripFo
 
       {error ? <div className="error">{error}</div> : null}
 
-      <div style={{ display: "flex", gap: 10, justifyContent: "flex-end" }}>
+      <div className="form-actions">
         <button className="button" onClick={onCancel} type="button">
           <X size={16} />
           Cancel

@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import { Download, Plus, RefreshCcw, ToggleLeft, ToggleRight } from "lucide-react";
 import { AnalyticsCards } from "@/components/dashboard/AnalyticsCards";
+import { Modal } from "@/components/Modal";
 import { TeamAccessPanel } from "@/components/dashboard/TeamAccessPanel";
 import { TripForm } from "@/components/forms/TripForm";
 import { TripTable } from "@/components/tables/TripTable";
@@ -205,7 +206,7 @@ export function AdminDashboard({ profile, initialTrips, initialTeams, auditLogs,
           <h2>PPRL Admin Dashboard</h2>
           <p>Global operations, analytics, team management, and sync control.</p>
         </div>
-        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+        <div className="toolbar-actions">
           <button className="button" onClick={exportCsv} type="button">
             <Download size={16} />
             Export CSV
@@ -223,8 +224,9 @@ export function AdminDashboard({ profile, initialTrips, initialTeams, auditLogs,
 
       <AnalyticsCards trips={trips} />
 
-      <section className="grid" style={{ gridTemplateColumns: "minmax(260px, 360px) 1fr", alignItems: "start" }}>
-        <aside className="panel" style={{ display: "flex", flexDirection: "column", gap: 0 }}>
+      <div className="stack">
+      <section className="grid dashboard-layout">
+        <aside className="panel">
           <ActiveUsersPanel users={activeUsers.filter((u) => u.role !== "admin")} />
           <div className="panel-header">
             <strong>Admin Actions</strong>
@@ -244,7 +246,7 @@ export function AdminDashboard({ profile, initialTrips, initialTeams, auditLogs,
               <button className="button primary" type="submit">
                 Save Day 0
               </button>
-              <p style={{ fontSize: 13, opacity: 0.7 }}>
+              <p className="hint">
                 {dayZeroDate
                   ? `Currently set to ${dayZeroDate}. Trips on this date sync to "Day 0", the next day to "Day 1", and so on through Day 3.`
                   : "Not set yet -- sync will fail until this is saved."}
@@ -270,7 +272,7 @@ export function AdminDashboard({ profile, initialTrips, initialTeams, auditLogs,
               ))}
             </div>
             {adminTeams.length ? (
-              <p style={{ fontSize: 13, opacity: 0.7 }}>
+              <p className="hint">
                 Admin team{adminTeams.length > 1 ? "s" : ""}: {adminTeams.map((team) => team.name).join(", ")} (global
                 access, not shown in trip filters).
               </p>
@@ -352,7 +354,7 @@ export function AdminDashboard({ profile, initialTrips, initialTeams, auditLogs,
 
       <TeamAccessPanel teams={teams} />
 
-      <section className="panel" style={{ marginTop: 18 }}>
+      <section className="panel">
         <div className="panel-header">
           <strong>Audit Logs</strong>
         </div>
@@ -386,25 +388,22 @@ export function AdminDashboard({ profile, initialTrips, initialTeams, auditLogs,
           </table>
         </div>
       </section>
+      </div>
 
-      {isCreating || editing ? (
-        <div className="modal-backdrop">
-          <section className="panel modal">
-            <div className="panel-header">
-              <strong>{editing ? "Edit Trip" : "Create Trip"}</strong>
-            </div>
-            <div className="panel-body">
-              <TripForm
-                teams={operationalTeams}
-                role="admin"
-                initialTrip={editing}
-                onCancel={closeModal}
-                onSaved={closeModal}
-              />
-            </div>
-          </section>
+      <Modal open={isCreating || editing !== null} onClose={closeModal} aria-label={editing ? "Edit Trip" : "Create Trip"}>
+        <div className="panel-header">
+          <strong>{editing ? "Edit Trip" : "Create Trip"}</strong>
         </div>
-      ) : null}
+        <div className="panel-body">
+          <TripForm
+            teams={operationalTeams}
+            role="admin"
+            initialTrip={editing}
+            onCancel={closeModal}
+            onSaved={closeModal}
+          />
+        </div>
+      </Modal>
     </>
   );
 }

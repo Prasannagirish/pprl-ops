@@ -1,5 +1,5 @@
 import { AppHeaderClientWrapper } from "@/components/dashboard/AppHeaderClientWrapper";
-import DashboardWave from "@/components/DashboardWave";
+import WaveBackground from "@/components/WaveBackground";
 import { TeamDashboard } from "@/components/dashboard/TeamDashboard";
 import { listTeams, listTrips, requireSession } from "@/lib/supabase/queries";
 import { redirect } from "next/navigation";
@@ -18,7 +18,7 @@ export default async function DashboardPage() {
 
   return (
     <main className="shell">
-      <DashboardWave />
+      <WaveBackground position="fixed" gap={28} baseRadius={0.9} maxLift={5} waveSpeed={0.028} waveSigma={2.6} baseAlpha={0.04} alphaJitter={0.04} maxAlpha={0.38} opacity={0.7} />
       <AppHeaderClientWrapper profile={profile} />
       <div className="page">
         <TeamDashboard profile={profile} initialTrips={trips} teams={teams} />

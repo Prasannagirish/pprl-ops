@@ -1,6 +1,8 @@
 "use client";
 
+import { useState } from "react";
 import { Pencil, Trash2 } from "lucide-react";
+import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { StatusBadge } from "@/components/tables/StatusBadge";
 import { formatDateTime } from "@/lib/sheets/time";
 import type { Trip } from "@/types/trip";
@@ -12,16 +14,18 @@ type TripTableProps = {
 };
 
 export function TripTable({ trips, onEdit, onDeleted }: TripTableProps) {
-  async function deleteTrip(id: string) {
-    const confirmed = window.confirm("Delete this trip?");
-    if (!confirmed) {
-      return;
-    }
+  const [pendingDelete, setPendingDelete] = useState<Trip | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
-    const response = await fetch(`/api/trips/${id}`, { method: "DELETE" });
+  async function confirmDelete() {
+    if (!pendingDelete) return;
+    setDeleting(true);
+    const response = await fetch(`/api/trips/${pendingDelete.id}`, { method: "DELETE" });
+    setDeleting(false);
     if (response.ok) {
-      onDeleted?.(id);
+      onDeleted?.(pendingDelete.id);
     }
+    setPendingDelete(null);
   }
 
   return (
@@ -78,14 +82,14 @@ export function TripTable({ trips, onEdit, onDeleted }: TripTableProps) {
                 <StatusBadge status={trip.sync_status} />
               </td>
               <td>
-                <div style={{ display: "flex", gap: 8 }}>
+                <div className="row-actions">
                   {onEdit ? (
                     <button className="button" onClick={() => onEdit(trip)} title="Edit trip" type="button">
                       <Pencil size={16} />
                     </button>
                   ) : null}
                   {onDeleted ? (
-                    <button className="button danger" onClick={() => deleteTrip(trip.id)} title="Delete trip" type="button">
+                    <button className="button danger" onClick={() => setPendingDelete(trip)} title="Delete trip" type="button">
                       <Trash2 size={16} />
                     </button>
                   ) : null}
@@ -100,6 +104,17 @@ export function TripTable({ trips, onEdit, onDeleted }: TripTableProps) {
           ) : null}
         </tbody>
       </table>
+
+      <ConfirmDialog
+        open={pendingDelete !== null}
+        title="Delete this trip?"
+        description={pendingDelete ? `${pendingDelete.guest_name}'s trip on ${pendingDelete.travel_date} will be removed permanently.` : undefined}
+        confirmLabel={deleting ? "Deleting…" : "Delete"}
+        danger
+        confirmDisabled={deleting}
+        onConfirm={confirmDelete}
+        onCancel={() => setPendingDelete(null)}
+      />
     </div>
   );
 }

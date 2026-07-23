@@ -8,8 +8,14 @@
    Calm graphite surfaces with one confident accent (the kind of blue you'd
    see lit on a departures board), used deliberately rather than smeared as
    a glow on everything. Status colors are muted on purpose -- they need to
-   be legible at a glance across a long shift, not loud. */
-:root {
+   be legible at a glance across a long shift, not loud.
+
+   Light and dark are both first-class -- see [data-theme="light"] below.
+   Everything reachable through a token flips automatically; nothing in the
+   component CSS should ever hardcode a color that needs to survive a
+   theme switch. */
+:root,
+:root[data-theme="dark"] {
   --ink:        #0e1013;   /* page background */
   --panel:      #15181e;   /* card / panel surface */
   --panel-lift: #1b1f27;   /* inputs, raised surfaces inside a panel */
@@ -23,6 +29,7 @@
   --accent:      #5b8def;
   --accent-dim:  rgba(91, 141, 239, 0.12);
   --accent-line: rgba(91, 141, 239, 0.4);
+  --accent-ink:  #bcd2f9;  /* text on an accent-dim fill */
 
   --go:      #36b37e;
   --go-dim:  rgba(54, 179, 126, 0.13);
@@ -35,16 +42,114 @@
   --stop:      #e25b54;
   --stop-dim:  rgba(226, 91, 84, 0.13);
   --stop-line: rgba(226, 91, 84, 0.3);
+  --stop-ink:  #f3a8a3;    /* text on a stop-dim fill */
 
-  --display: var(--font-space-grotesk), ui-sans-serif, system-ui, sans-serif;
-  --sans: var(--font-inter), ui-sans-serif, system-ui, -apple-system, sans-serif;
-  --mono: var(--font-jetbrains-mono), ui-monospace, monospace;
+  --shadow-panel: 0 1px 2px rgba(0, 0, 0, 0.4), 0 12px 32px -16px rgba(0, 0, 0, 0.55);
+  --shadow-modal: 0 24px 64px -20px rgba(0, 0, 0, 0.65);
+
+  --shimmer-rgb: 255, 255, 255;
+  --wave-rgb: 80, 150, 230;
+  --wave-alpha-scale: 1;
+  --backdrop: rgba(8, 10, 13, 0.7);
+  --topbar-bg: rgba(14, 16, 19, 0.9);
+
+  --button-hover-bg: #1f232b;
+  --button-hover-border: #353b47;
+  --accent-hover: #79a4f3;
+
+  color-scheme: dark;
+}
+
+:root[data-theme="light"] {
+  --ink:        #f4f5f8;
+  --panel:      #ffffff;
+  --panel-lift: #eef0f5;
+  --line:       #dde1e9;
+  --line-soft:  #e8eaf0;
+
+  --fog:        #454c58;
+  --dust:       #6b7280;
+  --paper:      #10131a;
+
+  --accent:      #3d6fe0;
+  --accent-dim:  rgba(61, 111, 224, 0.10);
+  --accent-line: rgba(61, 111, 224, 0.35);
+  --accent-ink:  #1d4ed8;
+
+  --go:      #12805a;
+  --go-dim:  rgba(18, 128, 90, 0.10);
+  --go-line: rgba(18, 128, 90, 0.32);
+
+  --hold:      #8a5a12;
+  --hold-dim:  rgba(138, 90, 18, 0.10);
+  --hold-line: rgba(138, 90, 18, 0.32);
+
+  --stop:      #c13a33;
+  --stop-dim:  rgba(193, 58, 51, 0.10);
+  --stop-line: rgba(193, 58, 51, 0.32);
+  --stop-ink:  #a3231d;
+
+  --shadow-panel: 0 1px 2px rgba(15, 23, 42, 0.05), 0 12px 32px -16px rgba(15, 23, 42, 0.12);
+  --shadow-modal: 0 24px 64px -20px rgba(15, 23, 42, 0.25);
+
+  --shimmer-rgb: 15, 23, 42;
+  --wave-rgb: 61, 111, 224;
+  /* A given alpha reads far fainter blended over near-white than over
+     near-black, so light mode needs materially more opacity to land at
+     the same visual presence as dark mode -- not just a color swap. */
+  --wave-alpha-scale: 2.6;
+  --backdrop: rgba(20, 24, 33, 0.35);
+  --topbar-bg: rgba(255, 255, 255, 0.85);
+
+  --button-hover-bg: #e4e7ee;
+  --button-hover-border: #c7ccd6;
+  --accent-hover: #2f5bc4;
+
+  color-scheme: light;
+}
+
+:root {
+  /* These name the Google Fonts families loaded via <link> in app/layout.tsx
+     directly -- there's no next/font wiring in this app, so a --font-*
+     custom-property indirection here would just resolve to nothing and
+     silently fall back to the browser default (which is what was
+     happening before this fix). */
+  --display: "Space Grotesk", ui-sans-serif, system-ui, sans-serif;
+  --sans: "Inter", ui-sans-serif, system-ui, -apple-system, sans-serif;
+  --mono: "JetBrains Mono", ui-monospace, monospace;
 
   --radius: 10px;
   --radius-sm: 7px;
 
-  --shadow-panel: 0 1px 2px rgba(0, 0, 0, 0.4), 0 12px 32px -16px rgba(0, 0, 0, 0.55);
-  --shadow-modal: 0 24px 64px -20px rgba(0, 0, 0, 0.65);
+  /* Stronger than the built-in CSS easings -- these have the punch that
+     makes UI motion read as intentional rather than default-browser. */
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
+}
+
+/* Theme changes flip several surfaces at once (bg, borders, shadows) --
+   without this they'd each repaint on their own schedule and the switch
+   would look like a flicker instead of one cohesive cross-fade. */
+:root { transition: color-scheme 0.2s; }
+
+body,
+.panel,
+.metric,
+.button,
+.field input,
+.field select,
+.field textarea,
+.topbar,
+.modal-backdrop {
+  transition-property: background-color, border-color, color, box-shadow, transform, opacity;
+  transition-duration: 0.18s;
+  transition-timing-function: var(--ease-out);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  body, .panel, .metric, .button, .field input, .field select, .field textarea, .topbar, .modal-backdrop {
+    transition-duration: 0.001s;
+  }
 }
 
 /* ── Reset ────────────────────────────────────────────────────────── */
@@ -80,7 +185,7 @@ a { color: inherit; text-decoration: none; }
 /* ── Topbar ───────────────────────────────────────────────────────── */
 .topbar {
   align-items: center;
-  background: rgba(14, 16, 19, 0.9);
+  background: var(--topbar-bg);
   backdrop-filter: blur(14px);
   border-bottom: 1px solid var(--line);
   display: flex;
@@ -95,6 +200,13 @@ a { color: inherit; text-decoration: none; }
 
 /* ── Brand ────────────────────────────────────────────────────────── */
 .brand { align-items: center; display: flex; gap: 12px; min-width: 0; }
+
+.topbar nav {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
 
 .brand-mark {
   align-items: center;
@@ -162,6 +274,12 @@ a { color: inherit; text-decoration: none; }
   margin-top: 4px;
 }
 
+.toolbar-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
 /* ── Buttons ──────────────────────────────────────────────────────── */
 .button {
   align-items: center;
@@ -177,15 +295,21 @@ a { color: inherit; text-decoration: none; }
   min-height: 38px;
   padding: 0 16px;
   text-decoration: none;
-  transition: border-color 0.15s, color 0.15s, background 0.15s, transform 0.05s;
+  transition: border-color 0.15s var(--ease-out), color 0.15s var(--ease-out), background 0.15s var(--ease-out), transform 120ms var(--ease-out);
 }
 
 .button:hover {
-  border-color: #353b47;
-  background: #1f232b;
+  border-color: var(--button-hover-border);
+  background: var(--button-hover-bg);
 }
 
-.button:active { transform: translateY(1px); }
+/* Press feedback -- confirms the interface heard the click before the
+   network round trip even starts. */
+.button:active { transform: scale(0.97); }
+
+@media (prefers-reduced-motion: reduce) {
+  .button:active { transform: none; }
+}
 
 .button.primary {
   background: var(--accent);
@@ -195,8 +319,8 @@ a { color: inherit; text-decoration: none; }
 }
 
 .button.primary:hover {
-  background: #79a4f3;
-  border-color: #79a4f3;
+  background: var(--accent-hover);
+  border-color: var(--accent-hover);
 }
 
 .button.danger {
@@ -213,6 +337,47 @@ a { color: inherit; text-decoration: none; }
 .button:disabled {
   cursor: not-allowed;
   opacity: 0.45;
+}
+
+/* ── Theme toggle ─────────────────────────────────────────────────── */
+.theme-toggle { padding: 0; width: 38px; flex-shrink: 0; }
+
+.theme-toggle-icons {
+  align-items: center;
+  display: inline-flex;
+  height: 16px;
+  justify-content: center;
+  position: relative;
+  width: 16px;
+}
+
+.theme-toggle-icon {
+  inset: 0;
+  opacity: 0;
+  position: absolute;
+  transform: scale(0.5) rotate(-90deg);
+  transition: transform 200ms var(--ease-out), opacity 200ms var(--ease-out);
+}
+
+.theme-toggle-icon[data-active="true"] {
+  opacity: 1;
+  transform: scale(1) rotate(0deg);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .theme-toggle-icon {
+    transform: none;
+    transition: opacity 150ms ease;
+  }
+}
+
+/* ── Row / form action groups ────────────────────────────────────── */
+.row-actions { display: flex; gap: 8px; }
+
+.form-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
 }
 
 /* ── Panels ───────────────────────────────────────────────────────── */
@@ -242,6 +407,11 @@ a { color: inherit; text-decoration: none; }
 
 .panel-body { padding: 18px; }
 
+/* A sub-section stacked inside a panel alongside other sections (e.g. a
+   presence list above an actions block) -- a hairline divider, not a
+   nested card. */
+.panel-section { border-bottom: 1px solid var(--line); }
+
 /* ── Grid utility ─────────────────────────────────────────────────── */
 .grid { display: grid; gap: 16px; }
 
@@ -250,10 +420,47 @@ a { color: inherit; text-decoration: none; }
   margin-bottom: 24px;
 }
 
+.grid.dashboard-layout {
+  align-items: start;
+  grid-template-columns: minmax(260px, 360px) 1fr;
+}
+
+.grid.two-col {
+  align-items: start;
+  gap: 24px;
+  grid-template-columns: minmax(280px, 380px) 1fr;
+}
+
+/* ── Vertical stack ───────────────────────────────────────────────
+   Page-level rhythm between major sections -- panels never set their
+   own top margin, the parent stacking them owns the spacing. */
+.stack {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+/* ── Hint text ────────────────────────────────────────────────────
+   Small muted sub-copy under a heading, form, or field -- always the
+   --fog token, never a one-off gray. */
+.hint {
+  color: var(--fog);
+  font-size: 13px;
+  margin: 0;
+}
+
+/* An icon sitting inline with text at the start of a heading/label. */
+.icon-inline { margin-right: 6px; vertical-align: middle; }
+
+/* A parenthetical note appended after a field label. */
+.field-label-note { font-weight: 400; margin-left: 4px; }
+
+/* A muted table cell (secondary info, e.g. an email under a bolded name). */
+.cell-muted { color: var(--fog); }
+
 /* ── Metric cards ─────────────────────────────────────────────────────
-   The one place we let the accent do real work: a small lit dot, like an
-   indicator light on a dispatch board, next to the label. Everything else
-   on the card stays quiet so the number reads first. */
+   Each card's own icon (from AnalyticsCards) is the only accent next to
+   the label -- everything else stays quiet so the number reads first. */
 .metric {
   background: var(--panel);
   border: 1px solid var(--line);
@@ -273,14 +480,7 @@ a { color: inherit; text-decoration: none; }
   text-transform: uppercase;
 }
 
-.metric span::before {
-  content: '';
-  background: var(--accent);
-  border-radius: 50%;
-  display: inline-block;
-  height: 6px;
-  width: 6px;
-}
+.metric-icon { opacity: 0.7; }
 
 .metric strong {
   color: var(--paper);
@@ -303,6 +503,8 @@ a { color: inherit; text-decoration: none; }
 /* ── Fields ───────────────────────────────────────────────────────── */
 .field { display: grid; gap: 6px; }
 
+.field-search { min-width: 260px; }
+
 .field label {
   color: var(--fog);
   font-size: 12px;
@@ -320,7 +522,7 @@ a { color: inherit; text-decoration: none; }
   min-height: 40px;
   outline: none;
   padding: 8px 12px;
-  transition: border-color 0.15s, box-shadow 0.15s;
+  transition: border-color 0.15s, box-shadow 0.15s, background-color 0.18s var(--ease-out), color 0.18s var(--ease-out);
   width: 100%;
 }
 
@@ -340,6 +542,10 @@ a { color: inherit; text-decoration: none; }
   background-repeat: no-repeat;
   background-position: right 12px center;
   padding-right: 32px;
+}
+
+[data-theme="light"] .field select {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23454c58' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
 }
 
 /* ── Form grid ────────────────────────────────────────────────────── */
@@ -409,10 +615,95 @@ tr:hover td { background: var(--line-soft); }
 .status.failed  { background: var(--stop-dim); color: var(--stop); }
 .status.failed::before { background: var(--stop); }
 
-/* ── Modal ────────────────────────────────────────────────────────── */
+/* ── Presence list ────────────────────────────────────────────────── */
+.presence-count {
+  align-items: center;
+  background: var(--go-dim);
+  border: 1px solid var(--go-line);
+  border-radius: 999px;
+  color: var(--go);
+  display: inline-flex;
+  font-size: 11px;
+  font-weight: 600;
+  gap: 5px;
+  padding: 2px 8px;
+}
+
+.presence-count::before {
+  background: var(--go);
+  border-radius: 50%;
+  content: '';
+  display: inline-block;
+  height: 6px;
+  width: 6px;
+}
+
+.presence-empty {
+  color: var(--fog);
+  font-size: 13px;
+  padding: 14px 18px;
+}
+
+.presence-list { list-style: none; margin: 0; padding: 8px 0; }
+
+.presence-item {
+  align-items: center;
+  border-bottom: 1px solid var(--line-soft);
+  display: flex;
+  gap: 10px;
+  justify-content: space-between;
+  padding: 9px 18px;
+}
+
+.presence-item:last-child { border-bottom: none; }
+
+.presence-user { align-items: center; display: flex; gap: 9px; min-width: 0; }
+.presence-user-text { min-width: 0; }
+
+.presence-avatar {
+  align-items: center;
+  border-radius: 50%;
+  display: inline-flex;
+  flex-shrink: 0;
+  font-size: 11px;
+  font-weight: 700;
+  height: 28px;
+  justify-content: center;
+  width: 28px;
+}
+
+.presence-avatar.admin { background: var(--accent-dim); border: 1px solid var(--accent-line); color: var(--accent); }
+.presence-avatar.team  { background: var(--go-dim);      border: 1px solid var(--go-line);      color: var(--go); }
+
+.presence-name {
+  color: var(--paper);
+  font-size: 13px;
+  font-weight: 500;
+  margin: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.presence-team { color: var(--fog); font-size: 11px; margin: 0; }
+
+.presence-meta {
+  align-items: flex-end;
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+  gap: 3px;
+}
+
+.presence-time { color: var(--dust); font-size: 11px; }
+
+/* ── Modal ─────────────────────────────────────────────────────────────
+   Enter is inviting (220ms ease-out); exit is a direct response to a click
+   the user already made, so it's snappier (150ms) -- asymmetric on purpose.
+   Not anchored to a trigger, so unlike a popover it stays centered. */
 .modal-backdrop {
   align-items: center;
-  background: rgba(8, 10, 13, 0.7);
+  background: var(--backdrop);
   backdrop-filter: blur(6px);
   display: flex;
   inset: 0;
@@ -420,6 +711,13 @@ tr:hover td { background: var(--line-soft); }
   padding: 18px;
   position: fixed;
   z-index: 40;
+  opacity: 1;
+  transition: opacity 220ms var(--ease-out);
+}
+
+.modal-backdrop[data-state="closed"] {
+  opacity: 0;
+  transition-duration: 150ms;
 }
 
 .modal {
@@ -428,25 +726,69 @@ tr:hover td { background: var(--line-soft); }
   overflow: auto;
   width: 100%;
   box-shadow: var(--shadow-modal);
+  transform-origin: center;
+  opacity: 1;
+  transform: scale(1);
+  transition: opacity 220ms var(--ease-out), transform 220ms var(--ease-out);
 }
 
-/* ── Notice / Error ───────────────────────────────────────────────── */
+.modal[data-state="closed"] {
+  opacity: 0;
+  transform: scale(0.96);
+  transition-duration: 150ms;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .modal-backdrop, .modal {
+    transition-property: opacity;
+    transform: none;
+  }
+
+  .modal[data-state="closed"] { transform: none; }
+}
+
+/* A modal mounts directly in its "open" state (no intermediate DOM state
+   to transition from), so without @starting-style the entrance would just
+   snap in. This defines what "open" transitions from on first paint. */
+@starting-style {
+  .modal-backdrop[data-state="open"] { opacity: 0; }
+  .modal[data-state="open"] { opacity: 0; transform: scale(0.96); }
+}
+
+.confirm-dialog { max-width: 420px; }
+
+/* ── Notice / Error ───────────────────────────────────────────────────
+   Mounts after a form action resolves -- a small settle-in rather than a
+   hard pop makes the feedback read as a direct response to what the user
+   just did. */
+.notice, .error {
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+  padding: 11px 14px;
+  opacity: 1;
+  transform: translateY(0);
+  transition: opacity 200ms var(--ease-out), transform 200ms var(--ease-out);
+
+  @starting-style {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+}
+
 .notice {
   background: var(--accent-dim);
   border: 1px solid var(--accent-line);
-  border-radius: var(--radius-sm);
-  color: #bcd2f9;
-  font-size: 13px;
-  padding: 11px 14px;
+  color: var(--accent-ink);
 }
 
 .error {
   background: var(--stop-dim);
   border: 1px solid var(--stop-line);
-  border-radius: var(--radius-sm);
-  color: #f3a8a3;
-  font-size: 13px;
-  padding: 11px 14px;
+  color: var(--stop-ink);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .notice, .error { transform: none; }
 }
 
 /* ── Login page ───────────────────────────────────────────────────── */
@@ -460,14 +802,26 @@ tr:hover td { background: var(--line-soft); }
   overflow: hidden;
 }
 
-/* Wave canvas sits behind everything */
-.login-page canvas {
+/* Wave canvas sits behind everything -- shared by the login card and the
+   app shell (see components/WaveBackground.tsx); .wave-canvas-fixed pins
+   it to the viewport instead of the nearest positioned ancestor. */
+.wave-canvas {
   position: absolute;
   inset: 0;
   width: 100%;
   height: 100%;
+  display: block;
   pointer-events: none;
   z-index: 0;
+}
+
+.wave-canvas-fixed { position: fixed; }
+
+.login-page-toggle {
+  position: absolute;
+  top: 24px;
+  right: 24px;
+  z-index: 2;
 }
 
 /* Panel floats above the canvas */
@@ -479,6 +833,7 @@ tr:hover td { background: var(--line-soft); }
   z-index: 1;
 }
 
+.login-panel .brand { margin-bottom: 28px; }
 
 .login-panel h1 {
   font-family: var(--display);
@@ -495,7 +850,9 @@ tr:hover td { background: var(--line-soft); }
   margin: 0 0 28px;
 }
 
-/* ── Login tabs ───────────────────────────────────────────────────── */
+/* ── Login tabs ─────────────────────────────────────────────────────
+   A sliding pill (not a per-tab background swap) so switching reads as
+   one shape moving, rather than two colors independently crossfading. */
 .login-tabs {
   background: var(--panel-lift);
   border-radius: var(--radius-sm);
@@ -503,6 +860,24 @@ tr:hover td { background: var(--line-soft); }
   gap: 2px;
   margin-bottom: 24px;
   padding: 3px;
+  position: relative;
+}
+
+.login-tabs-pill {
+  background: var(--panel);
+  border-radius: 5px;
+  box-shadow: var(--shadow-panel);
+  height: calc(100% - 6px);
+  left: 3px;
+  position: absolute;
+  top: 3px;
+  transform: translateX(0);
+  transition: transform 220ms var(--ease-in-out);
+  width: calc(50% - 4px);
+}
+
+.login-tabs[data-active="team"] .login-tabs-pill {
+  transform: translateX(calc(100% + 2px));
 }
 
 .login-tab {
@@ -515,15 +890,18 @@ tr:hover td { background: var(--line-soft); }
   font-size: 13px;
   font-weight: 500;
   padding: 8px 12px;
-  transition: color 0.15s, background 0.15s;
+  position: relative;
+  transition: color 150ms var(--ease-out);
+  z-index: 1;
 }
 
-.login-tab.active {
-  background: var(--panel);
-  color: var(--paper);
-}
+.login-tab.active { color: var(--paper); }
 
 .login-tab:hover:not(.active) { color: var(--paper); }
+
+@media (prefers-reduced-motion: reduce) {
+  .login-tabs-pill { transition: none; }
+}
 
 /* ── POC badge ────────────────────────────────────────────────────── */
 .poc-badge {
@@ -531,7 +909,7 @@ tr:hover td { background: var(--line-soft); }
   background: var(--accent-dim);
   border: 1px solid var(--accent-line);
   border-radius: 999px;
-  color: #bcd2f9;
+  color: var(--accent-ink);
   display: inline-flex;
   font-size: 12px;
   font-weight: 500;
@@ -576,12 +954,12 @@ tr:hover td { background: var(--line-soft); }
 .skeleton-block {
   background: linear-gradient(
     90deg,
-    rgba(255, 255, 255, 0.03) 25%,
-    rgba(255, 255, 255, 0.07) 37%,
-    rgba(255, 255, 255, 0.03) 63%
+    rgba(var(--shimmer-rgb), 0.03) 25%,
+    rgba(var(--shimmer-rgb), 0.07) 37%,
+    rgba(var(--shimmer-rgb), 0.03) 63%
   );
   background-size: 400% 100%;
-  animation: skeleton-shimmer 1.6s ease infinite;
+  animation: skeleton-shimmer 1.6s linear infinite;
   animation-delay: var(--shimmer-delay, 0s);
   border-radius: var(--radius-sm);
 }

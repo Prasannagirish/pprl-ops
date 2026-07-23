@@ -1,6 +1,7 @@
 import Link from "next/link";
-import { Shield, Users, LogOut } from "lucide-react";
+import { Shield, Users, LogOut, UserRound } from "lucide-react";
 import { LogoutButton } from "@/components/dashboard/LogoutButton";
+import { ThemeToggle } from "@/components/ThemeToggle";
 import type { Profile } from "@/types/trip";
 
 export function AppHeader({ profile, pocLabel }: { profile: Profile; pocLabel?: string }) {
@@ -13,9 +14,12 @@ export function AppHeader({ profile, pocLabel }: { profile: Profile; pocLabel?: 
           <p>{profile.role === "admin" ? "Admin console" : "Team console"}</p>
         </div>
       </div>
-      <nav style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
+      <nav>
         {pocLabel && (
-          <span className="poc-badge">👤 {pocLabel}</span>
+          <span className="poc-badge">
+            <UserRound size={13} />
+            {pocLabel}
+          </span>
         )}
         {profile.role === "admin" ? (
           <Link className="button" href="/admin">
@@ -28,6 +32,7 @@ export function AppHeader({ profile, pocLabel }: { profile: Profile; pocLabel?: 
           Trips
         </Link>
         <LogoutButton />
+        <ThemeToggle />
       </nav>
     </header>
   );

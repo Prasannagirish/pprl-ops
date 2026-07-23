@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import { Plus, Search } from "lucide-react";
 import { AnalyticsCards } from "@/components/dashboard/AnalyticsCards";
+import { Modal } from "@/components/Modal";
 import { TripForm } from "@/components/forms/TripForm";
 import { TripTable } from "@/components/tables/TripTable";
 import { useTripsRealtime } from "@/lib/supabase/useTripsRealtime";
@@ -77,7 +78,7 @@ export function TeamDashboard({ profile, initialTrips, teams }: TeamDashboardPro
 
       <section className="panel">
         <div className="panel-header">
-          <div className="field" style={{ minWidth: 260 }}>
+          <div className="field field-search">
             <label htmlFor="search">
               <Search size={14} /> Search Trips
             </label>
@@ -91,24 +92,20 @@ export function TeamDashboard({ profile, initialTrips, teams }: TeamDashboardPro
         />
       </section>
 
-      {isCreating || editing ? (
-        <div className="modal-backdrop">
-          <section className="panel modal">
-            <div className="panel-header">
-              <strong>{editing ? "Edit Trip" : "Create Trip"}</strong>
-            </div>
-            <div className="panel-body">
-              <TripForm
-                teams={teams}
-                role={profile.role}
-                initialTrip={editing}
-                onCancel={closeModal}
-                onSaved={closeModal}
-              />
-            </div>
-          </section>
+      <Modal open={isCreating || editing !== null} onClose={closeModal} aria-label={editing ? "Edit Trip" : "Create Trip"}>
+        <div className="panel-header">
+          <strong>{editing ? "Edit Trip" : "Create Trip"}</strong>
         </div>
-      ) : null}
+        <div className="panel-body">
+          <TripForm
+            teams={teams}
+            role={profile.role}
+            initialTrip={editing}
+            onCancel={closeModal}
+            onSaved={closeModal}
+          />
+        </div>
+      </Modal>
     </>
   );
 }

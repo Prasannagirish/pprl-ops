@@ -76,17 +76,15 @@ export function TeamAccessPanel({ teams }: { teams: Team[] }) {
   }
 
   return (
-    <section className="panel" style={{ marginTop: 18 }}>
+    <section className="panel">
       <div className="panel-header">
         <strong>
-          <KeyRound size={15} style={{ verticalAlign: "middle", marginRight: 6 }} />
+          <KeyRound size={15} className="icon-inline" />
           Team Access Codes
         </strong>
-        <span style={{ fontSize: 13, color: "var(--mist)" }}>
-          All POCs share one PIN per team — no individual accounts needed.
-        </span>
+        <span className="hint">All POCs share one PIN per team — no individual accounts needed.</span>
       </div>
-      <div className="panel-body grid" style={{ gridTemplateColumns: "minmax(280px, 380px) 1fr", gap: 24, alignItems: "start" }}>
+      <div className="panel-body grid two-col">
         {/* ── Set / reset code form ── */}
         <form className="grid" onSubmit={setCode}>
           <div className="field">
@@ -101,7 +99,7 @@ export function TeamAccessPanel({ teams }: { teams: Team[] }) {
           <div className="field">
             <label htmlFor="acEmail">
               Shared Auth Email
-              <span style={{ fontWeight: 400, marginLeft: 4, color: "var(--mist)" }}>(Supabase Auth user for this team)</span>
+              <span className="hint field-label-note">(Supabase Auth user for this team)</span>
             </label>
             <input
               id="acEmail"
@@ -144,7 +142,7 @@ export function TeamAccessPanel({ teams }: { teams: Team[] }) {
         {/* ── Current codes table ── */}
         <div className="table-wrap">
           {codes.length === 0 ? (
-            <p style={{ color: "var(--mist)", fontSize: 14 }}>No access codes set yet.</p>
+            <p className="hint">No access codes set yet.</p>
           ) : (
             <table>
               <thead>
@@ -161,7 +159,7 @@ export function TeamAccessPanel({ teams }: { teams: Team[] }) {
                     <td>
                       <strong>{operationalTeams.find((t) => t.id === c.team_id)?.name ?? c.team_id}</strong>
                     </td>
-                    <td style={{ fontSize: 13, color: "var(--mist)" }}>{c.shared_email}</td>
+                    <td className="cell-muted">{c.shared_email}</td>
                     <td>
                       <span className={`status ${c.enabled ? "synced" : "failed"}`}>
                         {c.enabled ? "Active" : "Disabled"}
@@ -171,7 +169,6 @@ export function TeamAccessPanel({ teams }: { teams: Team[] }) {
                       <button
                         className="button"
                         type="button"
-                        style={{ fontSize: 13 }}
                         onClick={() => toggleCode(c.team_id, c.enabled)}
                       >
                         {c.enabled ? <ToggleRight size={14} /> : <ToggleLeft size={14} />}

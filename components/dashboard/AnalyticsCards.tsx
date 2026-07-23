@@ -30,8 +30,8 @@ export function AnalyticsCards({ trips }: { trips: Trip[] }) {
         const Icon = card.icon;
         return (
           <div className="metric" key={card.label}>
-            <span style={{ display: "flex", alignItems: "center", gap: 6 }}>
-              <Icon size={13} style={{ opacity: 0.7 }} />
+            <span>
+              <Icon size={13} className="metric-icon" />
               {card.label}
             </span>
             <strong>{card.value}</strong>
