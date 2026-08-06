@@ -109,7 +109,6 @@ export default function LoginPage() {
             <span className="brand-mark">PPRL</span>
             <div>
               <h1>PPRL Ops</h1>
-              <p>Secure team operations console</p>
             </div>
           </div>
 
@@ -174,7 +173,7 @@ export default function LoginPage() {
                 <label htmlFor="teamCode">Team Code</label>
                 <input
                   id="teamCode"
-                  placeholder="e.g. TC"
+                  placeholder="e.g. Your Team Name"
                   value={teamCode}
                   onChange={(e) => setTeamCode(e.target.value)}
                   autoComplete="off"
@@ -196,7 +195,7 @@ export default function LoginPage() {
                 <label htmlFor="pocName">Your Name (POC)</label>
                 <input
                   id="pocName"
-                  placeholder="e.g. Devansh"
+                  placeholder="e.g. Your Name"
                   value={pocName}
                   onChange={(e) => setPocName(e.target.value)}
                   required

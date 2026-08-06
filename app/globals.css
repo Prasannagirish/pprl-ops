@@ -903,6 +903,75 @@ tr:hover td { background: var(--line-soft); }
   .login-tabs-pill { transition: none; }
 }
 
+/* ── Landing page ─────────────────────────────────────────────────────
+   The one bold element here is the ASCII hero -- everything else (badge,
+   copy, feature cards) reuses existing panel/button/hint tokens rather
+   than introducing a second visual language for a page a visitor sees
+   for a few seconds before logging in. */
+.hero {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 48px;
+  margin: 0 auto;
+  max-width: 1200px;
+  padding: clamp(40px, 8vw, 96px) clamp(18px, 4vw, 56px) clamp(32px, 6vw, 64px);
+}
+
+.hero-copy { flex: 1 1 380px; min-width: 280px; }
+
+.hero-copy h2 {
+  color: var(--paper);
+  font-family: var(--display);
+  font-size: clamp(28px, 4vw, 42px);
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  line-height: 1.15;
+  margin: 16px 0 12px;
+}
+
+.hero-sub {
+  font-size: 15px;
+  line-height: 1.55;
+  margin-bottom: 28px;
+  max-width: 46ch;
+}
+
+/* Framed like any other panel -- the SVG already carries its own dark
+   canvas, so this just gives it the same hairline + shadow every other
+   surface in the app gets, instead of floating loose on the page. */
+.hero-ascii {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-panel);
+  flex: 1 1 420px;
+  min-width: 280px;
+  overflow: hidden;
+  padding: 8px;
+}
+
+.hero-ascii img { display: block; height: auto; width: 100%; }
+
+.landing-features {
+  display: grid;
+  gap: 16px;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  margin: 0 auto 64px;
+  max-width: 1200px;
+  padding: 0 clamp(18px, 4vw, 56px);
+}
+
+.landing-feature svg { color: var(--accent); }
+
+.landing-feature h3 {
+  color: var(--paper);
+  font-family: var(--display);
+  font-size: 15px;
+  font-weight: 600;
+  margin: 10px 0 6px;
+}
+
 /* ── POC badge ────────────────────────────────────────────────────── */
 .poc-badge {
   align-items: center;
