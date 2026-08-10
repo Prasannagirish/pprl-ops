@@ -147,10 +147,12 @@ export function TripForm({ teams, role, initialTrip, onSaved, onCancel }: TripFo
           <select id="direction" value={form.direction} onChange={(event) => update("direction", event.target.value as Direction)}>
             <option value="TO_CAMPUS">To Campus</option>
             <option value="FROM_CAMPUS">From Campus</option>
+            <option value="TO_HOTEL">To Hotel</option>
+            <option value="FROM_HOTEL">From Hotel</option>
           </select>
         </div>
         <div className="field">
-          <label htmlFor="locationType">Location Type</label>
+          <label htmlFor="locationType">Pickup Location Type</label>
           <select
             id="locationType"
             value={form.locationType}
@@ -159,6 +161,7 @@ export function TripForm({ teams, role, initialTrip, onSaved, onCancel }: TripFo
             <option value="AIRPORT">Airport</option>
             <option value="RAILWAY">Railway</option>
             <option value="BUS_STAND">Bus Stand</option>
+            <option value="HOTEL">Hotel</option>
             <option value="OTHER">Other</option>
           </select>
         </div>

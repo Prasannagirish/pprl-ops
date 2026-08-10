@@ -904,21 +904,17 @@ tr:hover td { background: var(--line-soft); }
 }
 
 /* ── Landing page ─────────────────────────────────────────────────────
-   The one bold element here is the ASCII hero -- everything else (badge,
-   copy, feature cards) reuses existing panel/button/hint tokens rather
-   than introducing a second visual language for a page a visitor sees
-   for a few seconds before logging in. */
+   The ASCII hero is a full-width banner in normal document flow, sitting
+   between the topbar and the copy -- not behind either of them, so
+   nothing needs manual z-index/stacking to stay readable. */
 .hero {
   align-items: center;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 48px;
   margin: 0 auto;
   max-width: 1200px;
-  padding: clamp(40px, 8vw, 96px) clamp(18px, 4vw, 56px) clamp(32px, 6vw, 64px);
+  padding: clamp(40px, 7vw, 72px) clamp(18px, 4vw, 56px) clamp(32px, 6vw, 64px);
 }
 
-.hero-copy { flex: 1 1 380px; min-width: 280px; }
+.hero-copy { max-width: 560px; }
 
 .hero-copy h2 {
   color: var(--paper);
@@ -937,21 +933,36 @@ tr:hover td { background: var(--line-soft); }
   max-width: 46ch;
 }
 
-/* Framed like any other panel -- the SVG already carries its own dark
-   canvas, so this just gives it the same hairline + shadow every other
-   surface in the app gets, instead of floating loose on the page. */
-.hero-ascii {
-  background: var(--panel);
-  border: 1px solid var(--line);
-  border-radius: var(--radius);
-  box-shadow: var(--shadow-panel);
-  flex: 1 1 420px;
-  min-width: 280px;
+/* The SVG's dark canvas + light characters are baked in at generation
+   time, so it doesn't follow the theme toggle on its own. In dark mode
+   it already matches --ink/--paper; in light mode, inverting it lands
+   very close to the light theme's own tokens instead of leaving a dark
+   band across a light page. */
+.ascii-banner {
+  height: clamp(240px, 38vw, 440px);
   overflow: hidden;
-  padding: 8px;
+  position: relative;
+  width: 100%;
 }
 
-.hero-ascii img { display: block; height: auto; width: 100%; }
+.ascii-banner img {
+  display: block;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+  width: 100%;
+}
+
+/* Dissolves the crop line at the bottom edge into the page background
+   instead of ending the banner on a hard rectangle. */
+.ascii-banner::after {
+  background: linear-gradient(to bottom, transparent 65%, var(--ink) 100%);
+  content: "";
+  inset: 0;
+  position: absolute;
+}
+
+:root[data-theme="light"] .ascii-banner img { filter: invert(1); }
 
 .landing-features {
   display: grid;

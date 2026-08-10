@@ -34,6 +34,16 @@ export default async function Home() {
         </nav>
       </header>
 
+      {/* A banner in normal document flow, not a page-wide backdrop -- the
+          copy below sits after it, not on top of it. */}
+      <div className="ascii-banner" aria-hidden="true">
+        {/* next/image runs SVGs through its optimizer, which strips the
+            SMIL <animate> tags that make this type itself in -- a plain
+            <img> is what keeps the animation intact. */}
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src="/ascii/pprl-hero.svg" alt="" width={948} height={745} />
+      </div>
+
       <section className="hero">
         <div className="hero-copy">
           <span className="poc-badge">Pragyan · Guest travel ops</span>
@@ -45,13 +55,6 @@ export default async function Home() {
           <Link className="button primary" href="/login">
             Log in to PPRL Ops
           </Link>
-        </div>
-        <div className="hero-ascii" aria-hidden="true">
-          {/* next/image runs SVGs through its optimizer, which strips the
-              SMIL <animate> tags that make this type itself in -- a plain
-              <img> is what keeps the animation intact. */}
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/ascii/pprl-hero.svg" alt="" width={948} height={745} />
         </div>
       </section>
 
