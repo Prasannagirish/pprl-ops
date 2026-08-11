@@ -34,6 +34,7 @@ Run in order:
 4. `supabase/migrations/004_team_access_codes.sql`
 5. `supabase/migrations/005_event_config.sql`
 6. `supabase/migrations/006_perf_indexes.sql`
+7. `supabase/migrations/007_driver_scheduling.sql`
 
 ## Provisioning a shared team user (one-time per team)
 
