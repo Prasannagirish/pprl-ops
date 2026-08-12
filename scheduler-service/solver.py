@@ -11,7 +11,36 @@ jobs in this version.
 from ortools.sat.python import cp_model
 
 
+def _overlaps(a: dict, b: dict) -> bool:
+    return not (a["end_minutes"] <= b["start_minutes"] or b["end_minutes"] <= a["start_minutes"])
+
+
+def _find_locked_conflict_trip_ids(jobs: list[dict]) -> set[str]:
+    """Find jobs that must be excluded from the model because a locked driver
+    is pinned to two of that driver's jobs whose time windows overlap. Such a
+    conflict makes the CP-SAT model infeasible; detecting it up front lets us
+    drop only the offending jobs instead of losing the whole day's schedule.
+    """
+    jobs_by_locked_driver: dict[str, list[dict]] = {}
+    for job in jobs:
+        for driver_id in job.get("locked_driver_ids", []):
+            jobs_by_locked_driver.setdefault(driver_id, []).append(job)
+
+    conflicted_trip_ids: set[str] = set()
+    for locked_jobs in jobs_by_locked_driver.values():
+        for i in range(len(locked_jobs)):
+            for j in range(i + 1, len(locked_jobs)):
+                if _overlaps(locked_jobs[i], locked_jobs[j]):
+                    conflicted_trip_ids.add(locked_jobs[i]["trip_id"])
+                    conflicted_trip_ids.add(locked_jobs[j]["trip_id"])
+
+    return conflicted_trip_ids
+
+
 def solve(date: str, drivers: list[dict], jobs: list[dict]) -> dict:
+    conflicted_trip_ids = _find_locked_conflict_trip_ids(jobs)
+    solvable_jobs = [job for job in jobs if job["trip_id"] not in conflicted_trip_ids]
+
     model = cp_model.CpModel()
     driver_ids = [d["id"] for d in drivers]
 
@@ -19,7 +48,7 @@ def solve(date: str, drivers: list[dict], jobs: list[dict]) -> dict:
     covered_vars: dict[str, "cp_model.IntVar"] = {}
     intervals_by_driver: dict[str, list] = {driver_id: [] for driver_id in driver_ids}
 
-    for job in jobs:
+    for job in solvable_jobs:
         trip_id = job["trip_id"]
         locked_ids = set(job.get("locked_driver_ids", []))
         covered = model.NewBoolVar(f"covered_{trip_id}")
@@ -54,10 +83,10 @@ def solve(date: str, drivers: list[dict], jobs: list[dict]) -> dict:
     status = solver.Solve(model)
 
     assignments = []
-    unassigned_trip_ids = []
+    unassigned_trip_ids = list(conflicted_trip_ids)
 
     if status in (cp_model.OPTIMAL, cp_model.FEASIBLE):
-        for job in jobs:
+        for job in solvable_jobs:
             trip_id = job["trip_id"]
             if solver.Value(covered_vars[trip_id]):
                 for driver_id in driver_ids:
@@ -66,6 +95,6 @@ def solve(date: str, drivers: list[dict], jobs: list[dict]) -> dict:
             else:
                 unassigned_trip_ids.append(trip_id)
     else:
-        unassigned_trip_ids = [job["trip_id"] for job in jobs]
+        unassigned_trip_ids.extend(job["trip_id"] for job in solvable_jobs)
 
     return {"assignments": assignments, "unassigned_trip_ids": unassigned_trip_ids}

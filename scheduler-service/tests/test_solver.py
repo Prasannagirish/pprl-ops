@@ -59,3 +59,18 @@ def test_locked_driver_is_kept_even_if_suboptimal():
     ]
     result = solve("2026-08-20", drivers, jobs)
     assert result["assignments"] == [{"trip_id": "t1", "driver_id": "d2"}]
+
+
+def test_conflicting_locked_driver_overlap_only_drops_those_two_trips():
+    drivers = [{"id": "d1", "cab_id": "c1"}, {"id": "d2", "cab_id": "c2"}]
+    jobs = [
+        {"trip_id": "t1", "drivers_required": 1, "start_minutes": 540, "end_minutes": 600, "locked_driver_ids": ["d1"]},
+        {"trip_id": "t2", "drivers_required": 1, "start_minutes": 550, "end_minutes": 610, "locked_driver_ids": ["d1"]},
+        {"trip_id": "t3", "drivers_required": 1, "start_minutes": 700, "end_minutes": 760, "locked_driver_ids": []},
+    ]
+    result = solve("2026-08-20", drivers, jobs)
+    assert set(result["unassigned_trip_ids"]) == {"t1", "t2"}
+    assert len(result["assignments"]) == 1
+    assignment = result["assignments"][0]
+    assert assignment["trip_id"] == "t3"
+    assert assignment["driver_id"] in {"d1", "d2"}

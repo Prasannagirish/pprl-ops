@@ -52,8 +52,8 @@ def solve_endpoint(payload: SolveRequestBody, authorization: str = Header(defaul
 
     result = solve(
         payload.date,
-        [driver.dict() for driver in payload.drivers],
-        [job.dict() for job in payload.jobs],
+        [driver.model_dump() for driver in payload.drivers],
+        [job.model_dump() for job in payload.jobs],
     )
     return result
 
