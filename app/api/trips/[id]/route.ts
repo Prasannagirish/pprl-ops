@@ -4,6 +4,7 @@ import { getAuthContext } from "@/lib/supabase/auth";
 import { buildTripPayload, enqueueTripSync, assertTeamWritable } from "@/lib/trips/persistence";
 import { tripInputSchema } from "@/lib/validations/trip";
 import { logAudit } from "@/lib/audit";
+import { enqueueScheduleRun } from "@/lib/scheduling/queue";
 
 type Params = { params: { id: string } };
 
@@ -36,6 +37,7 @@ export async function PUT(request: Request, { params }: Params) {
 
     await Promise.all([
       enqueueTripSync(supabase, params.id),
+      enqueueScheduleRun(supabase, payload.travel_date),
       logAudit({ actorId: ctx.userId, teamId: payload.team_id, tripId: params.id, action: "trip.updated", metadata: { guestName: payload.guest_name } })
     ]);
 
@@ -57,7 +59,7 @@ export async function DELETE(_request: Request, { params }: Params) {
   // Fetch the trip to get audit metadata, then delete in parallel where possible
   const { data: trip } = await supabase
     .from("trips")
-    .select("team_id, guest_name")
+    .select("team_id, guest_name, travel_date")
     .eq("id", params.id)
     .maybeSingle();
 
@@ -66,8 +68,9 @@ export async function DELETE(_request: Request, { params }: Params) {
   const { error } = await supabase.from("trips").delete().eq("id", params.id);
   if (error) return NextResponse.json({ error: error.message }, { status: 400 });
 
-  // Fire audit log without awaiting — deletion is already done
+  // Fire audit log and schedule re-run without awaiting — deletion is already done
   logAudit({ actorId: user.id, teamId: trip.team_id, tripId: params.id, action: "trip.deleted", metadata: { guestName: trip.guest_name } });
+  enqueueScheduleRun(supabase, trip.travel_date).catch(() => {});
 
   return NextResponse.json({ id: params.id });
 }

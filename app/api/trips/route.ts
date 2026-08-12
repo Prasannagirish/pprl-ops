@@ -4,6 +4,7 @@ import { getAuthContext } from "@/lib/supabase/auth";
 import { buildTripPayload, enqueueTripSync, assertTeamWritable } from "@/lib/trips/persistence";
 import { tripInputSchema } from "@/lib/validations/trip";
 import { logAudit } from "@/lib/audit";
+import { enqueueScheduleRun } from "@/lib/scheduling/queue";
 
 export async function GET() {
   const supabase = createClient();
@@ -45,9 +46,10 @@ export async function POST(request: Request) {
     const { data, error } = await supabase.from("trips").insert(payload).select("id").single();
     if (error) return NextResponse.json({ error: error.message }, { status: 400 });
 
-    // Enqueue sync and log audit in parallel — neither blocks the response
+    // Enqueue sync, scheduling, and audit in parallel — none blocks the response
     await Promise.all([
       enqueueTripSync(supabase, data.id),
+      enqueueScheduleRun(supabase, payload.travel_date),
       logAudit({ actorId: ctx.userId, teamId: payload.team_id, tripId: data.id, action: "trip.created", metadata: { guestName: payload.guest_name } })
     ]);
 
