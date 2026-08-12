@@ -6,6 +6,7 @@ import { AnalyticsCards } from "@/components/dashboard/AnalyticsCards";
 import { Modal } from "@/components/Modal";
 import { TeamAccessPanel } from "@/components/dashboard/TeamAccessPanel";
 import { DriverRosterPanel } from "@/components/dashboard/DriverRosterPanel";
+import { DriverSchedulePanel } from "@/components/dashboard/DriverSchedulePanel";
 import { TripForm } from "@/components/forms/TripForm";
 import { TripTable } from "@/components/tables/TripTable";
 import { useTripsRealtime } from "@/lib/supabase/useTripsRealtime";
@@ -367,6 +368,8 @@ export function AdminDashboard({
       <TeamAccessPanel teams={teams} />
 
       <DriverRosterPanel drivers={initialDrivers} cabs={initialCabs} />
+
+      <DriverSchedulePanel drivers={initialDrivers} />
 
       <section className="panel">
         <div className="panel-header">

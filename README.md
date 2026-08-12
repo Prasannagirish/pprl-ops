@@ -82,6 +82,8 @@ This is a standard Next.js app, so it deploys cleanly to Vercel (or any Node hos
    - `APP_TIMEZONE` (e.g. `Asia/Kolkata`)
    - `TEAM_SHARED_PASSWORD`
    - `CRON_SECRET` — any random 16+ char string; this guards the auto-sync endpoint (see below)
+   - `GOOGLE_MAPS_API_KEY` — Distance Matrix API key, used to estimate trip durations for driver scheduling
+   - `SCHEDULER_SERVICE_URL`, `SCHEDULER_SERVICE_SECRET` — base URL and shared secret for the OR-Tools scheduler microservice (see `scheduler-service/README.md`)
    - Deploy.
 5. **Provision teams and a shared user per team** as described above.
 6. **Set up auto-sync** (see below) so trips land in the sheet without anyone clicking "Force Sync".
@@ -106,4 +108,10 @@ Set up:
 You can change the cadence by editing the `cron:` line in that file — e.g. `*/2 * * * *` for every 2 minutes.
 
 You can still trigger a manual sync any time from the admin dashboard's "Force Sync" button (`POST /api/sync`) — that path is unchanged and is independent of the scheduler.
+
+## Driver scheduling
+
+`GET /api/cron/schedule` drains queued driver-scheduling runs the same way `/api/cron/sync` drains the sheet sync queue — add a second scheduled job hitting this endpoint with the same `Authorization: Bearer <CRON_SECRET>` header (e.g. another line in `.github/workflows/auto-sync.yml`, or a second workflow file).
+
+Admins manage the day's driver roster and review/override the resulting schedule from the "Driver Roster" and "Driver Schedule" panels in the admin dashboard. See `docs/superpowers/specs/2026-08-11-driver-cab-scheduling-design.md` for the full design.
 
