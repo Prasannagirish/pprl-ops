@@ -5,12 +5,14 @@ import { Download, Plus, RefreshCcw, ToggleLeft, ToggleRight } from "lucide-reac
 import { AnalyticsCards } from "@/components/dashboard/AnalyticsCards";
 import { Modal } from "@/components/Modal";
 import { TeamAccessPanel } from "@/components/dashboard/TeamAccessPanel";
+import { DriverRosterPanel } from "@/components/dashboard/DriverRosterPanel";
 import { TripForm } from "@/components/forms/TripForm";
 import { TripTable } from "@/components/tables/TripTable";
 import { useTripsRealtime } from "@/lib/supabase/useTripsRealtime";
 import { usePresence } from "@/lib/supabase/usePresence";
 import { ActiveUsersPanel } from "@/components/dashboard/ActiveUsersPanel";
 import type { AuditLog, Direction, LocationType, Profile, SyncStatus, Team, Trip } from "@/types/trip";
+import type { Cab, Driver } from "@/types/scheduling";
 
 type AdminDashboardProps = {
   profile: Profile;
@@ -18,6 +20,8 @@ type AdminDashboardProps = {
   initialTeams: Team[];
   auditLogs: AuditLog[];
   initialDayZeroDate: string | null;
+  initialDrivers: Driver[];
+  initialCabs: Cab[];
 };
 
 type Filters = {
@@ -38,7 +42,15 @@ const emptyFilters: Filters = {
   to: ""
 };
 
-export function AdminDashboard({ profile, initialTrips, initialTeams, auditLogs, initialDayZeroDate }: AdminDashboardProps) {
+export function AdminDashboard({
+  profile,
+  initialTrips,
+  initialTeams,
+  auditLogs,
+  initialDayZeroDate,
+  initialDrivers,
+  initialCabs
+}: AdminDashboardProps) {
   const [trips, setTrips] = useState(initialTrips);
   const [teams, setTeams] = useState(initialTeams);
   const [filters, setFilters] = useState<Filters>(emptyFilters);
@@ -353,6 +365,8 @@ export function AdminDashboard({ profile, initialTrips, initialTeams, auditLogs,
       </section>
 
       <TeamAccessPanel teams={teams} />
+
+      <DriverRosterPanel drivers={initialDrivers} cabs={initialCabs} />
 
       <section className="panel">
         <div className="panel-header">

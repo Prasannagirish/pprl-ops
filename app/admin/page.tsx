@@ -18,17 +18,27 @@ async function getEventConfig(): Promise<string | null> {
   }
 }
 
+async function getDriversAndCabs() {
+  const admin = createAdminClient();
+  const [drivers, cabs] = await Promise.all([
+    admin.from("drivers").select("id, full_name, phone, active").order("full_name"),
+    admin.from("cabs").select("id, label, active").order("label")
+  ]);
+  return { drivers: drivers.data || [], cabs: cabs.data || [] };
+}
+
 export default async function AdminPage() {
   const { supabase, profile } = await requireAdmin();
 
   // Fetch all data in parallel — previously trips, teams, audit logs, and
   // event-config were fetched serially (3 awaited in page + 1 useEffect
   // waterfall after mount). Now it's one parallel round trip.
-  const [trips, teams, auditLogs, dayZeroDate] = await Promise.all([
+  const [trips, teams, auditLogs, dayZeroDate, driversAndCabs] = await Promise.all([
     listTrips(supabase),
     listTeams(supabase),
     listAuditLogs(supabase),
-    getEventConfig()
+    getEventConfig(),
+    getDriversAndCabs()
   ]);
 
   return (
@@ -42,6 +52,8 @@ export default async function AdminPage() {
           initialTeams={teams}
           auditLogs={auditLogs}
           initialDayZeroDate={dayZeroDate}
+          initialDrivers={driversAndCabs.drivers}
+          initialCabs={driversAndCabs.cabs}
         />
       </div>
     </main>
