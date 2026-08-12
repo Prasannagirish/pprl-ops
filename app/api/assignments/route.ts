@@ -73,7 +73,8 @@ export async function PATCH(request: Request) {
   const { error: deleteError } = await supabase
     .from("driver_trip_assignments")
     .delete()
-    .eq("trip_id", body.tripId);
+    .eq("trip_id", body.tripId)
+    .eq("roster_date", body.rosterDate);
 
   if (deleteError) return NextResponse.json({ error: deleteError.message }, { status: 400 });
 
