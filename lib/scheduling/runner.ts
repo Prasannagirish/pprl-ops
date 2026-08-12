@@ -29,11 +29,18 @@ export async function processQueuedScheduleRuns(limit = 10): Promise<{ processed
       results.push({ date, status: "SUCCEEDED" });
     } catch (runError) {
       const message = runError instanceof Error ? runError.message : "Unknown scheduling error";
-      await supabase
-        .from("schedule_runs")
-        .update({ status: "FAILED", error_message: message, completed_at: new Date().toISOString() })
-        .eq("roster_date", date)
-        .in("status", ["QUEUED", "RUNNING"]);
+      // Recording the failure is best-effort: if this update itself throws
+      // (e.g. a network-level failure, not just a Supabase {error} result),
+      // it must not stop the loop from processing the remaining dates.
+      try {
+        await supabase
+          .from("schedule_runs")
+          .update({ status: "FAILED", error_message: message, completed_at: new Date().toISOString() })
+          .eq("roster_date", date)
+          .in("status", ["QUEUED", "RUNNING"]);
+      } catch {
+        // Swallow — the original scheduling failure is already captured below.
+      }
       results.push({ date, status: "FAILED" });
     }
   }
