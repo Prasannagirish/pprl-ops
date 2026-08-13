@@ -1,0 +1,25 @@
+name: Auto-run driver scheduling
+
+# Hits the deployed /api/cron/schedule endpoint on a schedule so queued
+# schedule_runs (enqueued whenever a trip or driver roster changes) get
+# drained automatically, without anyone waiting on a manual trigger.
+# Same pattern as auto-sync.yaml, reusing the same repo secrets.
+#
+# Required repo secrets (Settings -> Secrets and variables -> Actions):
+#   APP_URL     e.g. https://pprl-ops.vercel.app
+#   CRON_SECRET same value as the CRON_SECRET env var set on Vercel
+
+on:
+  schedule:
+    - cron: "*/5 * * * *" # every 5 minutes, UTC
+  workflow_dispatch: {} # lets you trigger a run manually from the Actions tab
+
+jobs:
+  schedule:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Call schedule endpoint
+        run: |
+          curl --fail --silent --show-error \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
+            "${{ secrets.APP_URL }}/api/cron/schedule"
