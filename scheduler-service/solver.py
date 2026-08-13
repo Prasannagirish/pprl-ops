@@ -37,8 +37,29 @@ def _find_locked_conflict_trip_ids(jobs: list[dict]) -> set[str]:
     return conflicted_trip_ids
 
 
+def _find_missing_locked_driver_trip_ids(jobs: list[dict], driver_ids: set[str]) -> set[str]:
+    """Find jobs whose locked_driver_ids names a driver who isn't in that
+    date's available roster (e.g. locked, then later marked unavailable).
+    No pin variable can exist for a driver outside `drivers`, so silently
+    building the model would either let the solver quietly hand the trip to
+    a different driver (breaking the "a lock always survives" guarantee) or,
+    for drivers_required=2 jobs, make the coverage constraint infeasible and
+    blank the job out via the INFEASIBLE fallback. Route both cases through
+    the same pre-solve exclusion mechanism as overlapping-lock conflicts.
+    """
+    missing: set[str] = set()
+    for job in jobs:
+        for driver_id in job.get("locked_driver_ids", []):
+            if driver_id not in driver_ids:
+                missing.add(job["trip_id"])
+    return missing
+
+
 def solve(date: str, drivers: list[dict], jobs: list[dict]) -> dict:
-    conflicted_trip_ids = _find_locked_conflict_trip_ids(jobs)
+    driver_ids_set = {d["id"] for d in drivers}
+    conflicted_trip_ids = _find_locked_conflict_trip_ids(jobs) | _find_missing_locked_driver_trip_ids(
+        jobs, driver_ids_set
+    )
     solvable_jobs = [job for job in jobs if job["trip_id"] not in conflicted_trip_ids]
 
     model = cp_model.CpModel()

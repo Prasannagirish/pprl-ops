@@ -61,6 +61,23 @@ def test_locked_driver_is_kept_even_if_suboptimal():
     assert result["assignments"] == [{"trip_id": "t1", "driver_id": "d2"}]
 
 
+def test_locked_driver_not_in_roster_excludes_job_instead_of_reassigning():
+    # d2 is locked to t1 but is not present in the day's available roster
+    # (e.g. locked earlier, then marked unavailable). No pin variable can
+    # exist for d2 at all, so the job must be excluded from the model up
+    # front and reported unassigned -- not silently handed to d1 (which
+    # would leave two drivers effectively "assigned" to what was meant to
+    # be a single locked trip) and not left to blow up the coverage
+    # constraint into infeasibility.
+    drivers = [{"id": "d1", "cab_id": "c1"}]
+    jobs = [
+        {"trip_id": "t1", "drivers_required": 1, "start_minutes": 540, "end_minutes": 600, "locked_driver_ids": ["d2"]},
+    ]
+    result = solve("2026-08-20", drivers, jobs)
+    assert result["unassigned_trip_ids"] == ["t1"]
+    assert result["assignments"] == []
+
+
 def test_conflicting_locked_driver_overlap_only_drops_those_two_trips():
     drivers = [{"id": "d1", "cab_id": "c1"}, {"id": "d2", "cab_id": "c2"}]
     jobs = [
