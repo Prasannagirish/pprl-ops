@@ -32,7 +32,9 @@ export async function GET(request: Request) {
   const supabase = createAdminClient();
   const { data, error } = await supabase
     .from("driver_daily_roster")
-    .select("id, driver_id, roster_date, available, cab_id, substituting_for_driver_id, notes, drivers(full_name)")
+    .select(
+      "id, driver_id, roster_date, available, cab_id, substituting_for_driver_id, notes, drivers!driver_daily_roster_driver_id_fkey(full_name)"
+    )
     .eq("roster_date", date);
 
   if (error) return NextResponse.json({ error: error.message }, { status: 400 });
@@ -57,8 +59,14 @@ export async function POST(request: Request) {
         roster_date: body.rosterDate,
         available: body.available !== false,
         cab_id: body.cabId || null,
-        substituting_for_driver_id: body.substitutingForDriverId || null,
-        notes: body.notes || null
+        // Omitting these fields entirely (vs. explicitly sending null/"" to
+        // clear them) should not clobber whatever the row already has --
+        // upsert only overwrites columns present in the object, so leave
+        // them out rather than forcing null when the caller didn't send them.
+        ...(body.substitutingForDriverId !== undefined
+          ? { substituting_for_driver_id: body.substitutingForDriverId || null }
+          : {}),
+        ...(body.notes !== undefined ? { notes: body.notes || null } : {})
       },
       { onConflict: "driver_id,roster_date" }
     )

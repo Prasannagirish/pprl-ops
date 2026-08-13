@@ -44,6 +44,11 @@ export async function GET(request: Request) {
       .from("schedule_runs")
       .select("id, status, unassigned_trip_ids, error_message, completed_at")
       .eq("roster_date", date)
+      // Every trip/roster edit enqueues a fresh QUEUED run with an empty
+      // unassigned_trip_ids -- picking the newest row regardless of status
+      // would blank the unassigned banner until the next cron tick
+      // actually runs it. Only completed runs reflect real solver state.
+      .in("status", ["SUCCEEDED", "FAILED"])
       .order("created_at", { ascending: false })
       .limit(1)
   ]);
@@ -68,7 +73,25 @@ export async function PATCH(request: Request) {
     return NextResponse.json({ error: "tripId, rosterDate, and driverIds are required." }, { status: 400 });
   }
 
+  const dedupedDriverIds = Array.from(new Set(body.driverIds as string[]));
+
   const supabase = createAdminClient();
+
+  const { data: trip, error: tripError } = await supabase
+    .from("trips")
+    .select("drivers_required")
+    .eq("id", body.tripId)
+    .maybeSingle();
+
+  if (tripError) return NextResponse.json({ error: tripError.message }, { status: 400 });
+  if (!trip) return NextResponse.json({ error: "Trip not found." }, { status: 404 });
+
+  if (dedupedDriverIds.length > (trip.drivers_required as number)) {
+    return NextResponse.json(
+      { error: `This trip needs at most ${trip.drivers_required} driver(s); ${dedupedDriverIds.length} were provided.` },
+      { status: 400 }
+    );
+  }
 
   const { error: deleteError } = await supabase
     .from("driver_trip_assignments")
@@ -78,11 +101,11 @@ export async function PATCH(request: Request) {
 
   if (deleteError) return NextResponse.json({ error: deleteError.message }, { status: 400 });
 
-  if (body.driverIds.length === 0) {
+  if (dedupedDriverIds.length === 0) {
     return NextResponse.json({ assignments: [] });
   }
 
-  const rows = body.driverIds.map((driverId: string) => ({
+  const rows = dedupedDriverIds.map((driverId: string) => ({
     trip_id: body.tripId,
     driver_id: driverId,
     roster_date: body.rosterDate,

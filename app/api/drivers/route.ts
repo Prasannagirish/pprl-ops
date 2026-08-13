@@ -3,8 +3,8 @@
  * POST /api/drivers  – create a driver (admin only)
  *
  * Cabs are seeded/managed the same way as drivers but through the same
- * route with a `type` field, since both are simple named resources with
- * no extra behavior of their own.
+ * route with a `kind: "cab"` field, since both are simple named resources
+ * with no extra behavior of their own.
  */
 
 import { NextResponse } from "next/server";
