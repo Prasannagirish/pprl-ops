@@ -33,7 +33,8 @@ const DEFAULT_TRIPS: StubRow[] = [
  *   update call is captured, in order, in `updates`).
  * - driver_daily_roster: select().eq().eq() (roster_date, available).
  * - trips: select().eq() (travel_date).
- * - driver_trip_assignments: select().eq().eq() (roster_date, locked) plus upsert().
+ * - driver_trip_assignments: select().eq().eq() (roster_date, locked) plus
+ *   delete().eq().eq() (roster_date, locked=false) and upsert().
  */
 function makeStub(overrides: { trips?: StubRow[]; locked?: StubRow[]; roster?: StubRow[] } = {}) {
   const trips = overrides.trips ?? DEFAULT_TRIPS;
@@ -41,6 +42,7 @@ function makeStub(overrides: { trips?: StubRow[]; locked?: StubRow[]; roster?: S
   const roster = overrides.roster ?? DEFAULT_ROSTER;
   const upsertedRows: unknown[] = [];
   const updates: Record<string, unknown>[] = [];
+  const deleteCalls: unknown[] = [];
 
   const stub = {
     from(table: string) {
@@ -84,6 +86,14 @@ function makeStub(overrides: { trips?: StubRow[]; locked?: StubRow[]; roster?: S
               eq: async () => ({ data: locked, error: null })
             })
           }),
+          delete: () => ({
+            eq: (col: string, value: unknown) => ({
+              eq: async (col2: string, value2: unknown) => {
+                deleteCalls.push({ [col]: value, [col2]: value2 });
+                return { error: null };
+              }
+            })
+          }),
           upsert: async (rows: unknown) => {
             upsertedRows.push(...(rows as unknown[]));
             return { error: null };
@@ -94,7 +104,7 @@ function makeStub(overrides: { trips?: StubRow[]; locked?: StubRow[]; roster?: S
     }
   } as unknown as import("@supabase/supabase-js").SupabaseClient;
 
-  return { stub, upsertedRows, updates };
+  return { stub, upsertedRows, updates, deleteCalls };
 }
 
 let activeStub: import("@supabase/supabase-js").SupabaseClient = makeStub().stub;
@@ -108,7 +118,7 @@ describe("processQueuedScheduleRuns", () => {
   });
 
   it("solves each queued date and writes non-locked assignments", async () => {
-    const { stub, upsertedRows, updates } = makeStub();
+    const { stub, upsertedRows, updates, deleteCalls } = makeStub();
     activeStub = stub;
 
     getDurationMinutesMock.mockResolvedValue(45);
@@ -120,6 +130,10 @@ describe("processQueuedScheduleRuns", () => {
     const result = await processQueuedScheduleRuns();
 
     expect(result).toEqual({ processed: 1, results: [{ date: "2026-08-20", status: "SUCCEEDED" }] });
+    // Stale non-locked rows for the date are cleared before the fresh
+    // solver solution is written, so a reassignment never leaves a ghost
+    // row from a previous run behind.
+    expect(deleteCalls).toEqual([{ roster_date: "2026-08-20", locked: false }]);
     expect(upsertedRows).toEqual([
       { trip_id: "t1", driver_id: "d1", roster_date: "2026-08-20", source: "solver", locked: false }
     ]);
@@ -127,8 +141,37 @@ describe("processQueuedScheduleRuns", () => {
     expect(callSolverMock).toHaveBeenCalledWith({
       date: "2026-08-20",
       drivers: [{ id: "d1", cab_id: "c1" }],
-      jobs: [{ trip_id: "t1", drivers_required: 1, start_minutes: 540, end_minutes: 585, locked_driver_ids: [] }]
+      // 2026-08-20T09:00:00Z is 14:30 IST (870 min), not 09:00 (540 min) --
+      // see the dedicated timezone test below for why this matters.
+      jobs: [{ trip_id: "t1", drivers_required: 1, start_minutes: 870, end_minutes: 915, locked_driver_ids: [] }]
     });
+  });
+
+  it("computes start/end minutes from local (Asia/Kolkata) wall-clock time, not UTC", async () => {
+    // 2026-08-20T09:00:00Z is 14:30 IST -- using getUTCHours()/getUTCMinutes()
+    // would have wrongly produced 540 (09:00) instead of 870 (14:30).
+    const trips: StubRow[] = [
+      {
+        id: "t1",
+        pickup_location: "Airport",
+        drop_location: "Campus",
+        pickup_time: "2026-08-20T09:00:00.000Z",
+        drivers_required: 1
+      }
+    ];
+    const { stub } = makeStub({ trips });
+    activeStub = stub;
+
+    getDurationMinutesMock.mockResolvedValue(45);
+    callSolverMock.mockResolvedValue({ assignments: [], unassigned_trip_ids: [] });
+
+    await processQueuedScheduleRuns();
+
+    expect(callSolverMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        jobs: [expect.objectContaining({ start_minutes: 870, end_minutes: 915 })]
+      })
+    );
   });
 
   it("returns no-op when nothing is queued", async () => {
@@ -296,6 +339,7 @@ describe("processQueuedScheduleRuns", () => {
         if (table === "driver_trip_assignments") {
           return {
             select: () => ({ eq: () => ({ eq: async () => ({ data: [], error: null }) }) }),
+            delete: () => ({ eq: () => ({ eq: async () => ({ error: null }) }) }),
             upsert: async () => ({ error: null })
           };
         }

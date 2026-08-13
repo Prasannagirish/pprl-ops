@@ -98,9 +98,29 @@ async function fetchLockedAssignments(supabase: SupabaseClient, date: string): P
   return byTrip;
 }
 
+const APP_TIMEZONE = () => process.env.APP_TIMEZONE || "Asia/Kolkata";
+
+// pickup_time is a timestamptz that reflects real local wall-clock time
+// (this is an India-based ops app). Using getUTCHours()/getUTCMinutes()
+// here would rotate every trip's minute-of-day by the timezone offset,
+// which wraps at midnight UTC (05:30 local for IST) -- two trips that are
+// actually close together in local time near that boundary could compute
+// to minute values that look far apart (or vice-versa), silently breaking
+// the no-overlap constraint right at that boundary. Instead, read the
+// local wall-clock hour/minute via Intl (same approach lib/sheets/time.ts
+// already uses for APP_TIMEZONE-aware formatting elsewhere in this repo).
 function minutesSinceMidnight(isoString: string): number {
   const date = new Date(isoString);
-  return date.getUTCHours() * 60 + date.getUTCMinutes();
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone: APP_TIMEZONE(),
+    hour: "2-digit",
+    minute: "2-digit",
+    hourCycle: "h23"
+  }).formatToParts(date);
+
+  const hour = Number(parts.find((part) => part.type === "hour")?.value ?? "0");
+  const minute = Number(parts.find((part) => part.type === "minute")?.value ?? "0");
+  return hour * 60 + minute;
 }
 
 async function runScheduleForDate(supabase: SupabaseClient, date: string): Promise<void> {
@@ -150,6 +170,18 @@ async function runScheduleForDate(supabase: SupabaseClient, date: string): Promi
       source: "solver" as const,
       locked: false
     }));
+
+  // Clear out stale non-locked rows from a previous run before writing the
+  // fresh solution. Without this, a driver reassigned away from a trip
+  // (e.g. because they became unavailable between runs) leaves a ghost
+  // row behind alongside the new driver's row. Locked rows are manual
+  // overrides and must never be touched here.
+  const { error: deleteError } = await supabase
+    .from("driver_trip_assignments")
+    .delete()
+    .eq("roster_date", date)
+    .eq("locked", false);
+  if (deleteError) throw new Error(deleteError.message);
 
   if (newAssignmentRows.length > 0) {
     const { error } = await supabase
