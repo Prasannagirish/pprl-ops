@@ -95,7 +95,7 @@ export function DriverSchedulePanel({ drivers }: { drivers: Driver[] }) {
         {unassignedIds.size > 0 && (
           <div className="notice">
             <AlertTriangle size={14} className="icon-inline" />
-            {unassignedIds.size} trip(s) could not be fully staffed with today's roster.
+            {unassignedIds.size} trip(s) could not be fully staffed with today&apos;s roster.
           </div>
         )}
         {latestRun?.status === "FAILED" && (

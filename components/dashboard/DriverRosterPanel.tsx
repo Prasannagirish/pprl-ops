@@ -72,7 +72,7 @@ export function DriverRosterPanel({ drivers, cabs }: { drivers: Driver[]; cabs: 
           <Users size={15} className="icon-inline" />
           Driver Roster
         </strong>
-        <span className="hint">Who's available, and which cab they have, for a given date.</span>
+        <span className="hint">Who&apos;s available, and which cab they have, for a given date.</span>
       </div>
       <div className="panel-body stack">
         <div className="field">
