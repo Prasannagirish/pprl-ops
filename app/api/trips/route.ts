@@ -5,6 +5,7 @@ import { buildTripPayload, enqueueTripSync, assertTeamWritable } from "@/lib/tri
 import { tripInputSchema } from "@/lib/validations/trip";
 import { logAudit } from "@/lib/audit";
 import { enqueueScheduleRun } from "@/lib/scheduling/queue";
+import { createAdminClient } from "@/lib/supabase/admin";
 
 export async function GET() {
   const supabase = createClient();
@@ -46,10 +47,16 @@ export async function POST(request: Request) {
     const { data, error } = await supabase.from("trips").insert(payload).select("id").single();
     if (error) return NextResponse.json({ error: error.message }, { status: 400 });
 
-    // Enqueue sync, scheduling, and audit in parallel — none blocks the response
+    // Enqueue sync, scheduling, and audit in parallel — none blocks the
+    // response, and none of them may fail the trip write, which already
+    // succeeded above. schedule_runs is admin-only under RLS, so the
+    // enqueue must go through the admin client rather than the
+    // session-scoped one (team users would otherwise get rejected by RLS
+    // and the whole write would appear to fail even though the trip row
+    // was already inserted).
     await Promise.all([
       enqueueTripSync(supabase, data.id),
-      enqueueScheduleRun(supabase, payload.travel_date),
+      enqueueScheduleRun(createAdminClient(), payload.travel_date).catch(() => {}),
       logAudit({ actorId: ctx.userId, teamId: payload.team_id, tripId: data.id, action: "trip.created", metadata: { guestName: payload.guest_name } })
     ]);
 
