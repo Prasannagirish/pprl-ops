@@ -505,6 +505,32 @@ a { color: inherit; text-decoration: none; }
 
 .field-search { min-width: 260px; }
 
+.field-row {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.field-row input {
+  background: var(--panel-lift);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  color: var(--paper);
+  flex: 1 1 160px;
+  min-height: 40px;
+  outline: none;
+  padding: 8px 12px;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.field-row input::placeholder { color: var(--dust); }
+
+.field-row input:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-dim);
+}
+
 .field label {
   color: var(--fog);
   font-size: 12px;

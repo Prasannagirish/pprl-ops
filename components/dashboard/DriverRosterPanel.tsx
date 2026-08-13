@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState, type FormEvent } from "react";
 import { Users, RefreshCw } from "lucide-react";
 import type { Cab, Driver } from "@/types/scheduling";
 
@@ -25,11 +25,59 @@ type RosterRow = {
   drivers?: { full_name: string } | null;
 };
 
-export function DriverRosterPanel({ drivers, cabs }: { drivers: Driver[]; cabs: Cab[] }) {
+export function DriverRosterPanel({ drivers: initialDrivers, cabs: initialCabs }: { drivers: Driver[]; cabs: Cab[] }) {
   const [date, setDate] = useState(() => todayLocalDate());
   const [roster, setRoster] = useState<RosterRow[]>([]);
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(false);
+  const [drivers, setDrivers] = useState(initialDrivers);
+  const [cabs, setCabs] = useState(initialCabs);
+  const [newDriverName, setNewDriverName] = useState("");
+  const [newDriverPhone, setNewDriverPhone] = useState("");
+  const [newCabLabel, setNewCabLabel] = useState("");
+  const [addingDriver, setAddingDriver] = useState(false);
+  const [addingCab, setAddingCab] = useState(false);
+
+  async function addDriver(event: FormEvent) {
+    event.preventDefault();
+    if (!newDriverName.trim()) return;
+    setAddingDriver(true);
+    setMessage("");
+    const response = await fetch("/api/drivers", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ fullName: newDriverName.trim(), phone: newDriverPhone.trim() || null })
+    });
+    const body = await response.json().catch(() => ({}));
+    setAddingDriver(false);
+    if (!response.ok) {
+      setMessage(body.error || "Failed to add driver.");
+      return;
+    }
+    setDrivers((rows) => [...rows, body.driver].sort((a, b) => a.full_name.localeCompare(b.full_name)));
+    setNewDriverName("");
+    setNewDriverPhone("");
+  }
+
+  async function addCab(event: FormEvent) {
+    event.preventDefault();
+    if (!newCabLabel.trim()) return;
+    setAddingCab(true);
+    setMessage("");
+    const response = await fetch("/api/drivers", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ kind: "cab", fullName: newCabLabel.trim() })
+    });
+    const body = await response.json().catch(() => ({}));
+    setAddingCab(false);
+    if (!response.ok) {
+      setMessage(body.error || "Failed to add cab.");
+      return;
+    }
+    setCabs((rows) => [...rows, body.cab].sort((a, b) => a.label.localeCompare(b.label)));
+    setNewCabLabel("");
+  }
 
   const loadRoster = useCallback(() => {
     fetch(`/api/roster?date=${date}`)
@@ -129,6 +177,39 @@ export function DriverRosterPanel({ drivers, cabs }: { drivers: Driver[]; cabs: 
           <RefreshCw size={14} />
           Refresh
         </button>
+        <div className="stack">
+          <form className="field-row" onSubmit={addDriver}>
+            <input
+              type="text"
+              placeholder="New driver name"
+              value={newDriverName}
+              onChange={(event) => setNewDriverName(event.target.value)}
+              disabled={addingDriver}
+            />
+            <input
+              type="text"
+              placeholder="Phone (optional)"
+              value={newDriverPhone}
+              onChange={(event) => setNewDriverPhone(event.target.value)}
+              disabled={addingDriver}
+            />
+            <button className="button" type="submit" disabled={addingDriver || !newDriverName.trim()}>
+              Add driver
+            </button>
+          </form>
+          <form className="field-row" onSubmit={addCab}>
+            <input
+              type="text"
+              placeholder="New cab label"
+              value={newCabLabel}
+              onChange={(event) => setNewCabLabel(event.target.value)}
+              disabled={addingCab}
+            />
+            <button className="button" type="submit" disabled={addingCab || !newCabLabel.trim()}>
+              Add cab
+            </button>
+          </form>
+        </div>
       </div>
     </section>
   );
