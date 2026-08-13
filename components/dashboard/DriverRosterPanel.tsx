@@ -1,8 +1,19 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Users, RefreshCw } from "lucide-react";
 import type { Cab, Driver } from "@/types/scheduling";
+
+/** Local calendar date (YYYY-MM-DD) in the browser's own timezone -- using
+ * `new Date().toISOString()` would read the UTC date, which is the *previous*
+ * day between local midnight and the UTC offset (e.g. 00:00-05:30 IST). */
+function todayLocalDate(): string {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, "0");
+  const day = String(now.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
 
 type RosterRow = {
   id: string;
@@ -15,17 +26,21 @@ type RosterRow = {
 };
 
 export function DriverRosterPanel({ drivers, cabs }: { drivers: Driver[]; cabs: Cab[] }) {
-  const [date, setDate] = useState(() => new Date().toISOString().slice(0, 10));
+  const [date, setDate] = useState(() => todayLocalDate());
   const [roster, setRoster] = useState<RosterRow[]>([]);
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(false);
 
-  useEffect(() => {
+  const loadRoster = useCallback(() => {
     fetch(`/api/roster?date=${date}`)
       .then((r) => r.json())
       .then((body) => setRoster(body.roster || []))
       .catch(() => setRoster([]));
   }, [date]);
+
+  useEffect(() => {
+    loadRoster();
+  }, [loadRoster]);
 
   async function setAvailability(driverId: string, available: boolean, cabId: string | null) {
     setLoading(true);
@@ -110,7 +125,7 @@ export function DriverRosterPanel({ drivers, cabs }: { drivers: Driver[]; cabs: 
             </tbody>
           </table>
         </div>
-        <button className="button" type="button" onClick={() => setDate((d) => d)} disabled={loading}>
+        <button className="button" type="button" onClick={loadRoster} disabled={loading}>
           <RefreshCw size={14} />
           Refresh
         </button>

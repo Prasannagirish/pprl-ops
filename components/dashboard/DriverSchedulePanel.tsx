@@ -2,7 +2,18 @@
 
 import { useEffect, useState } from "react";
 import { CalendarClock, AlertTriangle } from "lucide-react";
-import type { Driver } from "@/types/scheduling";
+import type { Driver, DriverTripAssignment, ScheduleRun } from "@/types/scheduling";
+
+/** Local calendar date (YYYY-MM-DD) in the browser's own timezone -- using
+ * `new Date().toISOString()` would read the UTC date, which is the *previous*
+ * day between local midnight and the UTC offset (e.g. 00:00-05:30 IST). */
+function todayLocalDate(): string {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, "0");
+  const day = String(now.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
 
 type TripRow = {
   id: string;
@@ -13,24 +24,16 @@ type TripRow = {
   drivers_required: number;
 };
 
-type AssignmentRow = {
-  id: string;
-  trip_id: string;
-  driver_id: string;
-  source: "solver" | "manual";
-  locked: boolean;
+// The API response extends the base DriverTripAssignment shape with the
+// joined driver name, so extend rather than replace.
+type AssignmentRow = DriverTripAssignment & {
   drivers?: { full_name: string } | null;
 };
 
-type LatestRun = {
-  id: string;
-  status: string;
-  unassigned_trip_ids: string[];
-  error_message: string | null;
-} | null;
+type LatestRun = Pick<ScheduleRun, "id" | "status" | "unassigned_trip_ids" | "error_message"> | null;
 
 export function DriverSchedulePanel({ drivers }: { drivers: Driver[] }) {
-  const [date, setDate] = useState(() => new Date().toISOString().slice(0, 10));
+  const [date, setDate] = useState(() => todayLocalDate());
   const [trips, setTrips] = useState<TripRow[]>([]);
   const [assignments, setAssignments] = useState<AssignmentRow[]>([]);
   const [latestRun, setLatestRun] = useState<LatestRun>(null);
