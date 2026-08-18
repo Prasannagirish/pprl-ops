@@ -109,22 +109,39 @@
 }
 
 :root {
-  /* These name the Google Fonts families loaded via <link> in app/layout.tsx
-     directly -- there's no next/font wiring in this app, so a --font-*
-     custom-property indirection here would just resolve to nothing and
-     silently fall back to the browser default (which is what was
-     happening before this fix). */
-  --display: "Space Grotesk", ui-sans-serif, system-ui, sans-serif;
-  --sans: "Inter", ui-sans-serif, system-ui, -apple-system, sans-serif;
+  /* SF Pro on Apple platforms via the system stack; Inter (already loaded
+     as a webfont for the same metrics) everywhere else. One family for
+     both display and body copy -- SF Pro itself has optical sizing built
+     in rather than swapping families at different sizes. */
+  --display: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Inter", ui-sans-serif, system-ui, sans-serif;
+  --sans: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Inter", ui-sans-serif, system-ui, sans-serif;
   --mono: "JetBrains Mono", ui-monospace, monospace;
 
-  --radius: 10px;
-  --radius-sm: 7px;
+  /* Continuous-corner radii -- Apple's cards and sheets read rounder and
+     softer than a typical web app's. */
+  --radius: 18px;
+  --radius-sm: 12px;
+  --radius-lg: 28px;
+  --radius-pill: 999px;
 
   /* Stronger than the built-in CSS easings -- these have the punch that
      makes UI motion read as intentional rather than default-browser. */
   --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
   --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
+  /* Apple's own spring curve (approximated as a bezier: quick departure,
+     long gentle settle) -- used for anything that should feel alive
+     rather than mechanical (hero entrances, sheet presentation). */
+  --ease-spring: cubic-bezier(0.16, 1, 0.3, 1);
+
+  /* Frosted-glass materials, thin -> thick, matched to the surface they
+     sit on top of (nav bar vs. a modal sheet). */
+  --material-thin: rgba(255, 255, 255, 0.6);
+  --material-thick: rgba(255, 255, 255, 0.8);
+}
+
+:root[data-theme="dark"] {
+  --material-thin: rgba(22, 24, 28, 0.6);
+  --material-thick: rgba(22, 24, 28, 0.82);
 }
 
 /* Theme changes flip several surfaces at once (bg, borders, shadows) --
@@ -182,12 +199,15 @@ a { color: inherit; text-decoration: none; }
   position: relative;
 }
 
-/* ── Topbar ───────────────────────────────────────────────────────── */
+/* ── Topbar ─────────────────────────────────────────────────────────
+   Apple's global nav: a thin frosted strip, not a heavy app toolbar --
+   condensed height, a hairline so faint it barely registers as a border. */
 .topbar {
   align-items: center;
-  background: var(--topbar-bg);
-  backdrop-filter: blur(14px);
-  border-bottom: 1px solid var(--line);
+  background: var(--material-thin);
+  backdrop-filter: blur(20px) saturate(1.6);
+  -webkit-backdrop-filter: blur(20px) saturate(1.6);
+  border-bottom: 1px solid var(--line-soft);
   display: flex;
   gap: 24px;
   justify-content: space-between;
@@ -195,7 +215,7 @@ a { color: inherit; text-decoration: none; }
   position: sticky;
   top: 0;
   z-index: 20;
-  height: 60px;
+  height: 52px;
 }
 
 /* ── Brand ────────────────────────────────────────────────────────── */
@@ -399,13 +419,14 @@ a { color: inherit; text-decoration: none; }
 }
 
 .panel-header strong {
-  font-size: 12px;
+  font-family: var(--display);
+  font-size: 14px;
   font-weight: 600;
-  letter-spacing: 0.02em;
+  letter-spacing: -0.01em;
   color: var(--paper);
 }
 
-.panel-body { padding: 18px; }
+.panel-body { padding: 20px 22px; }
 
 /* A sub-section stacked inside a panel alongside other sections (e.g. a
    presence list above an actions block) -- a hairline divider, not a
@@ -466,18 +487,24 @@ a { color: inherit; text-decoration: none; }
   border: 1px solid var(--line);
   border-radius: var(--radius);
   box-shadow: var(--shadow-panel);
-  padding: 16px 18px;
+  padding: 18px 20px;
+  transition: transform 200ms var(--ease-out), box-shadow 200ms var(--ease-out);
+}
+
+.metric:hover { transform: translateY(-1px); box-shadow: var(--shadow-modal); }
+
+@media (prefers-reduced-motion: reduce) {
+  .metric:hover { transform: none; }
 }
 
 .metric span {
   align-items: center;
   color: var(--fog);
   display: flex;
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 500;
   gap: 6px;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
+  letter-spacing: -0.01em;
 }
 
 .metric-icon { opacity: 0.7; }
@@ -486,10 +513,11 @@ a { color: inherit; text-decoration: none; }
   color: var(--paper);
   display: block;
   font-family: var(--display);
-  font-size: 28px;
+  font-size: 34px;
+  font-variant-numeric: tabular-nums;
   font-weight: 600;
-  letter-spacing: -0.01em;
-  margin-top: 10px;
+  letter-spacing: -0.02em;
+  margin-top: 8px;
 }
 
 /* ── Filters ──────────────────────────────────────────────────────── */
@@ -601,10 +629,9 @@ th, td {
 
 th {
   color: var(--fog);
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 600;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
+  letter-spacing: -0.01em;
 }
 
 td { font-size: 13px; color: var(--paper); }
@@ -929,35 +956,106 @@ tr:hover td { background: var(--line-soft); }
   .login-tabs-pill { transition: none; }
 }
 
-/* ── Landing page ─────────────────────────────────────────────────────
-   The ASCII hero is a full-width banner in normal document flow, sitting
-   between the topbar and the copy -- not behind either of them, so
-   nothing needs manual z-index/stacking to stay readable. */
-.hero {
+/* ── Landing page ───────────────────────────────────────────────────
+   A section-by-section clone of apple.com's own layout grammar: a
+   three-column centered nav, a giant centered hero, alternating
+   full-bleed "product" panels (each own background, own visual, own
+   one-line pitch), a closing CTA band, and a dense sitemap footer. */
+
+/* Three true columns (brand / center nav / actions) so the center nav
+   stays visually centered on the viewport regardless of how wide the
+   brand or actions column is -- flex space-between alone can't do this
+   once the two sides are different widths. */
+.nav-apple {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
   align-items: center;
-  margin: 0 auto;
-  max-width: 1200px;
-  padding: clamp(40px, 7vw, 72px) clamp(18px, 4vw, 56px) clamp(32px, 6vw, 64px);
+  height: 44px;
+  padding: 0 clamp(16px, 4vw, 32px);
 }
 
-.hero-copy { max-width: 560px; }
+.nav-apple-brand {
+  align-items: center;
+  color: var(--paper);
+  display: flex;
+  font-family: var(--display);
+  font-size: 13px;
+  font-weight: 600;
+  gap: 8px;
+  justify-self: start;
+  letter-spacing: -0.01em;
+}
+
+.nav-apple-links {
+  display: flex;
+  gap: clamp(16px, 2.6vw, 34px);
+  justify-self: center;
+}
+
+.nav-apple-links a {
+  color: var(--fog);
+  font-size: 12px;
+  font-weight: 400;
+  letter-spacing: -0.01em;
+  transition: color 150ms var(--ease-out);
+  white-space: nowrap;
+}
+
+.nav-apple-links a:hover { color: var(--paper); }
+
+.nav-apple-actions {
+  align-items: center;
+  display: flex;
+  gap: 14px;
+  justify-self: end;
+}
+
+.nav-apple-actions .button { min-height: 30px; padding: 0 14px; font-size: 12px; }
+
+@media (max-width: 760px) {
+  .nav-apple { grid-template-columns: auto 1fr auto; }
+  .nav-apple-links { display: none; }
+}
+
+/* Big centered hero -- oversized, tight-tracked display type is the
+   single most recognizable Apple product-page signature. */
+.hero {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin: 0 auto;
+  max-width: 1000px;
+  padding: clamp(56px, 11vw, 120px) clamp(18px, 4vw, 56px) clamp(28px, 5vw, 48px);
+  text-align: center;
+}
+
+.hero-copy { display: flex; flex-direction: column; align-items: center; max-width: 720px; }
 
 .hero-copy h2 {
   color: var(--paper);
   font-family: var(--display);
-  font-size: clamp(28px, 4vw, 42px);
+  font-size: clamp(40px, 7vw, 80px);
   font-weight: 600;
-  letter-spacing: -0.02em;
-  line-height: 1.15;
-  margin: 16px 0 12px;
+  letter-spacing: -0.03em;
+  line-height: 1.05;
+  margin: 18px 0 14px;
 }
 
 .hero-sub {
-  font-size: 15px;
-  line-height: 1.55;
-  margin-bottom: 28px;
-  max-width: 46ch;
+  color: var(--fog);
+  font-size: clamp(17px, 2vw, 21px);
+  line-height: 1.5;
+  margin: 0 auto 30px;
+  max-width: 44ch;
 }
+
+.hero-cta-row { display: flex; gap: 12px; justify-content: center; }
+
+/* Apple's marketing CTAs are true pills, distinct from the rounded-rect
+   buttons used inside the product/app UI. */
+.button.pill { border-radius: var(--radius-pill); min-height: 44px; padding: 0 24px; font-size: 15px; }
+.button.ghost { background: transparent; border-color: transparent; color: var(--accent); }
+.button.ghost:hover { background: transparent; border-color: transparent; color: var(--accent-hover); }
 
 /* The SVG's dark canvas + light characters are baked in at generation
    time, so it doesn't follow the theme toggle on its own. In dark mode
@@ -965,10 +1063,14 @@ tr:hover td { background: var(--line-soft); }
    very close to the light theme's own tokens instead of leaving a dark
    band across a light page. */
 .ascii-banner {
-  height: clamp(240px, 38vw, 440px);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-panel);
+  height: clamp(220px, 34vw, 420px);
+  margin: 8px auto 0;
+  max-width: 1000px;
   overflow: hidden;
   position: relative;
-  width: 100%;
+  width: calc(100% - clamp(36px, 8vw, 112px));
 }
 
 .ascii-banner img {
@@ -990,23 +1092,85 @@ tr:hover td { background: var(--line-soft); }
 
 :root[data-theme="light"] .ascii-banner img { filter: invert(1); }
 
-.landing-features {
-  display: grid;
-  gap: 16px;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  margin: 0 auto 64px;
-  max-width: 1200px;
-  padding: 0 clamp(18px, 4vw, 56px);
+/* ── Product sections ───────────────────────────────────────────────
+   Each one is a full-bleed panel with its own background tone --
+   Apple's product page scrolls through a sequence of these rather than
+   a single continuous page background, so a section boundary itself
+   reads as "next topic" without needing a divider line. */
+.product-section {
+  padding: clamp(72px, 12vw, 140px) clamp(18px, 4vw, 56px);
+  text-align: center;
 }
 
-.landing-feature svg { color: var(--accent); }
+.product-section.tone-a { background: var(--ink); }
+.product-section.tone-b { background: var(--panel); }
 
-.landing-feature h3 {
+.product-section-inner { margin: 0 auto; max-width: 880px; }
+
+.product-eyebrow {
+  color: var(--accent);
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  margin: 0 0 12px;
+}
+
+.product-section h3 {
   color: var(--paper);
   font-family: var(--display);
-  font-size: 15px;
+  font-size: clamp(30px, 5vw, 52px);
   font-weight: 600;
-  margin: 10px 0 6px;
+  letter-spacing: -0.025em;
+  line-height: 1.08;
+  margin: 0 0 16px;
+}
+
+.product-section p {
+  color: var(--fog);
+  font-size: clamp(16px, 1.7vw, 19px);
+  line-height: 1.55;
+  margin: 0 auto;
+  max-width: 52ch;
+}
+
+/* Each feature gets a large icon "tile" standing in for a product shot --
+   scaled and centered the way Apple centers a device render under copy. */
+.product-visual {
+  align-items: center;
+  background: var(--accent-dim);
+  border: 1px solid var(--accent-line);
+  border-radius: var(--radius-lg);
+  color: var(--accent);
+  display: flex;
+  height: clamp(160px, 22vw, 260px);
+  justify-content: center;
+  margin: clamp(32px, 6vw, 56px) auto 0;
+  max-width: 640px;
+  transition: transform 400ms var(--ease-spring);
+}
+
+.product-section:hover .product-visual { transform: scale(1.015); }
+
+@media (prefers-reduced-motion: reduce) {
+  .product-visual { transition: none; }
+  .product-section:hover .product-visual { transform: none; }
+}
+
+/* ── Closing CTA band ─────────────────────────────────────────────── */
+.cta-band {
+  background: var(--panel);
+  border-top: 1px solid var(--line-soft);
+  padding: clamp(56px, 9vw, 96px) clamp(18px, 4vw, 56px);
+  text-align: center;
+}
+
+.cta-band h3 {
+  color: var(--paper);
+  font-family: var(--display);
+  font-size: clamp(28px, 4vw, 40px);
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  margin: 0 0 24px;
 }
 
 /* ── POC badge ────────────────────────────────────────────────────── */
@@ -1027,14 +1191,54 @@ tr:hover td { background: var(--line-soft); }
 .code-row { align-items: center; display: flex; gap: 8px; }
 .code-row input { flex: 1; }
 
-/* ── Footer ───────────────────────────────────────────────────────── */
+/* ── Footer ─────────────────────────────────────────────────────────
+   Apple's real footer: a dense multi-column sitemap above a thin legal
+   strip, both quieter and smaller-type than anything above the fold. */
 .site-footer {
-  border-top: 1px solid var(--line);
+  background: var(--panel);
+  border-top: 1px solid var(--line-soft);
   color: var(--dust);
   font-size: 12px;
-  margin-top: 48px;
-  padding: 20px clamp(18px, 4vw, 56px);
-  text-align: center;
+}
+
+.footer-sitemap {
+  display: grid;
+  gap: 28px;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  margin: 0 auto;
+  max-width: 1200px;
+  padding: 40px clamp(18px, 4vw, 56px) 28px;
+}
+
+.footer-col h4 {
+  color: var(--fog);
+  font-size: 12px;
+  font-weight: 600;
+  margin: 0 0 12px;
+}
+
+.footer-col ul { display: grid; gap: 9px; list-style: none; margin: 0; padding: 0; }
+
+.footer-col a {
+  color: var(--dust);
+  font-size: 12px;
+  transition: color 150ms var(--ease-out);
+}
+
+.footer-col a:hover { color: var(--paper); }
+
+.footer-legal {
+  align-items: center;
+  border-top: 1px solid var(--line-soft);
+  color: var(--dust);
+  display: flex;
+  flex-wrap: wrap;
+  font-size: 11px;
+  gap: 8px 16px;
+  justify-content: space-between;
+  margin: 0 auto;
+  max-width: 1200px;
+  padding: 16px clamp(18px, 4vw, 56px) 24px;
 }
 
 .footer-heart { display: inline-block; margin: 0 4px; }

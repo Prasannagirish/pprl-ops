@@ -30,12 +30,7 @@ export default function RootLayout({
           }}
         />
       </head>
-      <body>
-        {children}
-        <footer className="site-footer">
-          Made with <span className="footer-heart">❤️</span> by PPRL
-        </footer>
-      </body>
+      <body>{children}</body>
     </html>
   );
 }
